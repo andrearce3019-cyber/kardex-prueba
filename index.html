@@ -113,7 +113,7 @@ details.compra[open] summary{border-bottom:1px solid var(--line)}
 details.compra .body{padding:12px 14px;display:grid;gap:12px}
 /* Boleta */
 .drop{border:1.5px dashed var(--line);border-radius:var(--r);padding:18px;display:grid;gap:12px;justify-items:center;text-align:center;background:var(--soft)}
-.drop img{max-height:320px;border-radius:8px;border:1px solid var(--line)}
+.drop img{max-height:220px;border-radius:8px;border:1px solid var(--line)}
 .grupo{border:1px solid var(--line);border-radius:8px;padding:12px;display:grid;gap:10px;background:var(--surface)}
 .grupo.dup{border-color:var(--warn)}
 .linea{display:grid;grid-template-columns:minmax(0,2.4fr) repeat(4,minmax(64px,1fr)) auto auto auto;gap:8px;align-items:end;padding-top:10px;border-top:1px dashed var(--line)}
@@ -457,6 +457,7 @@ function vistaBoleta(){
       <div class="row" style="justify-content:center">
         <label class="btn ${d.url?"":"primary"}" for="foto">${d.url ? "Cambiar foto" : "Tomar o subir foto"}</label>
         <input id="foto" type="file" accept="image/jpeg,image/png,image/webp" hidden>
+        <button class="btn ${d.url?"primary":""}" data-act="ejemplo">Llenar con la boleta de ejemplo</button>
         ${d.url ? (d.leyendo
           ? `<button class="btn primary" disabled><span class="spin"></span> Leyendo boleta…</button><button class="btn" data-act="parar">Detener</button>`
           : S.sample === null ? "" : `<button class="btn primary" data-act="leer" ${fotoOk?"":"disabled"}>Leer boleta</button>`) : ""}
@@ -465,13 +466,13 @@ function vistaBoleta(){
       ${!fotoOk ? `<p class="muted" style="margin:0;font-size:.85rem">${S.sample===null ? "Sube la foto y digita la compra mirándola: la verás aquí mismo mientras llenas los datos." : "Comprobando si se puede leer fotos…"}</p>` : ""}
       ${d.error ? `<div class="banner">${esc(d.error)}</div>` : ""}
     </div>
-    ${!d.datos ? `<div class="row"><button class="btn" data-act="manual">Digitar la compra a mano</button><button class="btn" data-act="ejemplo">Llenar con la boleta de ejemplo (Grupo Vega)</button></div>` : ""}
+    ${!d.datos ? `<div class="row"><span class="muted">¿Sin foto?</span><button class="btn" data-act="manual">Digitar la compra a mano</button></div>` : `<p class="muted" style="margin:0;text-align:center">↓ Baja para revisar los productos y guardar</p>`}
   </section>`;
   if(!d.datos) return `<div><h1>Registrar compra</h1><p class="sub">Con foto o digitada. Si un producto ya existe, se suma a su stock.</p></div>` + paso1;
   const x = d.datos;
   return `<div><h1>Registrar compra</h1><p class="sub">Revisa que todo coincida con la boleta y guarda.</p></div>
   ${paso1}
-  <section class="card">
+  <section class="card" id="paso2">
     <h2>2. Datos de la boleta</h2>
     <div class="grid2">
       <label class="f">Proveedor<input data-h="proveedor" value="${esc(x.proveedor)}" list="dlProv" placeholder="Ej. Grupo Vega Distribución"></label>
@@ -806,7 +807,7 @@ document.addEventListener("click", e => {
   else if(a === "leer") leerBoleta();
   else if(a === "parar") S.draft?.ctl?.abort();
   else if(a === "manual"){ asegurarDraft(); S.draft.datos = datosVacios(); render(); }
-  else if(a === "ejemplo"){ asegurarDraft(); S.draft.datos = armarDraft(BOLETA_EJEMPLO); S.view = "boleta"; render(); toast("Boleta cargada. Revisa y toca Guardar."); }
+  else if(a === "ejemplo"){ asegurarDraft(); S.draft.datos = armarDraft(BOLETA_EJEMPLO); S.view = "boleta"; render(); bajarAlFormulario(); toast("Boleta cargada. Revisa y toca Guardar."); }
   else if(a === "reiniciar"){
     if(t.dataset.confirm !== "1"){ t.dataset.confirm = "1"; t.textContent = "¿Seguro? Borrar todo"; return; }
     S.db.reiniciar(); S.draft = null; cerrarFicha(); toast("Datos borrados.");
@@ -850,7 +851,7 @@ document.addEventListener("change", e => {
   const t = e.target;
   if(t.id === "foto" && t.files?.[0]){
     asegurarDraft(); if(S.draft.url) URL.revokeObjectURL(S.draft.url);
-    S.draft.file = t.files[0]; S.draft.error = ""; const fr = new FileReader(); fr.onload = () => { S.draft.url = fr.result; if(!S.draft.datos) S.draft.datos = datosVacios(); render(); }; fr.readAsDataURL(t.files[0]); return;
+    S.draft.file = t.files[0]; S.draft.error = ""; const fr = new FileReader(); fr.onload = () => { S.draft.url = fr.result; if(!S.draft.datos) S.draft.datos = datosVacios(); render(); bajarAlFormulario(); }; fr.readAsDataURL(t.files[0]); return;
   }
   if(t.id === "fl"){ S.linea = t.value; render(); return; }
   if(t.id === "fo"){ S.orden = t.value; render(); return; }
@@ -868,6 +869,10 @@ document.addEventListener("change", e => {
 });
 
 // ---------- Conexión ----------
+function bajarAlFormulario(){
+  const reducir = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+  setTimeout(() => document.getElementById("paso2")?.scrollIntoView({behavior: reducir ? "auto" : "smooth", block:"start"}), 50);
+}
 // Boleta real de ejemplo (Grupo Vega, 26/10/2026), con la forma que devuelve la lectura de fotos
 const BOLETA_EJEMPLO = {proveedor:"Grupo Vega Distribución S.A.C.", ruc:"", documento:"BA10-11053277", fecha:"2026-10-26", total:344.34, items:[
   {codigo:"770705", descripcion:"TRASL.GRAT LA LLAMA FOSFORO FAMILIAR X2", cantidad:1, unidadCompra:"UND", precioUnit:0.92, importe:0, bonificacion:true, productoKey:"llama", factor:1, nuevo:{nombre:"Fósforo La Llama Familiar x2", marca:"La Llama", linea:"Abarrotes", categoria:"Fósforos", unidadVenta:"paquete"}},
