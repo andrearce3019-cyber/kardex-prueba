@@ -280,7 +280,7 @@ function render(){
   if(S.view === "boleta"){ m.innerHTML = vistaBoleta(); return; }
   if(!listo && !S.sinConexion){ m.innerHTML = `<div class="card empty"><span class="spin"></span><p>Cargando tu inventario…</p></div>`; return; }
   const C = new Map(S.productos.map(p => [p.id, calc(p)]));
-  m.innerHTML = `<div class="banner info">Versión de prueba: puedes registrar compras y explorar todo. Los datos se borran al cerrar o recargar la página.</div>` +
+  m.innerHTML = `<div class="banner info row between"><span>Versión de prueba: los datos se guardan solo en este celular o computadora.</span>${S.productos.length || S.compras.length ? `<button class="btn small" data-act="reiniciar">Borrar todo y empezar de nuevo</button>` : ""}</div>` +
     (S.view === "resumen" ? vistaResumen(C) : S.view === "inventario" ? vistaInventario(C) : vistaCompras());
 }
 
@@ -288,7 +288,10 @@ function vacioInicial(){
   return `<div class="card empty">
     <h2>Empieza la prueba</h2>
     <p>Registra tu primera compra: toma una foto a la boleta o digítala. Cada producto entra una sola vez y las compras siguientes se suman a su stock.</p>
-    <button class="btn primary" data-act="nueva">Registrar primera compra</button>
+    <div class="row" style="justify-content:center">
+      <button class="btn primary" data-act="nueva">Registrar primera compra</button>
+      <button class="btn" data-act="ejemplo">Probar con la boleta de ejemplo</button>
+    </div>
   </div>`;
 }
 
@@ -462,7 +465,7 @@ function vistaBoleta(){
       ${!fotoOk ? `<p class="muted" style="margin:0;font-size:.85rem">${S.sample===null ? "Sube la foto y digita la compra mirándola: la verás aquí mismo mientras llenas los datos." : "Comprobando si se puede leer fotos…"}</p>` : ""}
       ${d.error ? `<div class="banner">${esc(d.error)}</div>` : ""}
     </div>
-    ${!d.datos ? `<div class="row"><span class="muted">¿Sin foto?</span><button class="btn" data-act="manual">Digitar la compra a mano</button></div>` : ""}
+    ${!d.datos ? `<div class="row"><button class="btn" data-act="manual">Digitar la compra a mano</button><button class="btn" data-act="ejemplo">Llenar con la boleta de ejemplo (Grupo Vega)</button></div>` : ""}
   </section>`;
   if(!d.datos) return `<div><h1>Registrar compra</h1><p class="sub">Con foto o digitada. Si un producto ya existe, se suma a su stock.</p></div>` + paso1;
   const x = d.datos;
@@ -803,6 +806,11 @@ document.addEventListener("click", e => {
   else if(a === "leer") leerBoleta();
   else if(a === "parar") S.draft?.ctl?.abort();
   else if(a === "manual"){ asegurarDraft(); S.draft.datos = datosVacios(); render(); }
+  else if(a === "ejemplo"){ asegurarDraft(); S.draft.datos = armarDraft(BOLETA_EJEMPLO); S.view = "boleta"; render(); toast("Boleta cargada. Revisa y toca Guardar."); }
+  else if(a === "reiniciar"){
+    if(t.dataset.confirm !== "1"){ t.dataset.confirm = "1"; t.textContent = "¿Seguro? Borrar todo"; return; }
+    S.db.reiniciar(); S.draft = null; cerrarFicha(); toast("Datos borrados.");
+  }
   else if(a === "descartar"){ if(S.draft?.url) URL.revokeObjectURL(S.draft.url); S.draft = null; render(); }
   else if(a === "add-grupo"){ S.draft.datos.grupos.push(grupoVacio()); render(); }
   else if(a === "add-linea"){ S.draft.datos.grupos[+t.dataset.g].lineas.push(lineaVacia()); render(); }
@@ -842,7 +850,7 @@ document.addEventListener("change", e => {
   const t = e.target;
   if(t.id === "foto" && t.files?.[0]){
     asegurarDraft(); if(S.draft.url) URL.revokeObjectURL(S.draft.url);
-    S.draft.file = t.files[0]; S.draft.error = ""; const fr = new FileReader(); fr.onload = () => { S.draft.url = fr.result; render(); }; fr.readAsDataURL(t.files[0]); return;
+    S.draft.file = t.files[0]; S.draft.error = ""; const fr = new FileReader(); fr.onload = () => { S.draft.url = fr.result; if(!S.draft.datos) S.draft.datos = datosVacios(); render(); }; fr.readAsDataURL(t.files[0]); return;
   }
   if(t.id === "fl"){ S.linea = t.value; render(); return; }
   if(t.id === "fo"){ S.orden = t.value; render(); return; }
@@ -860,13 +868,30 @@ document.addEventListener("change", e => {
 });
 
 // ---------- Conexión ----------
-// Modo prueba: todo vive en memoria mientras la página está abierta
+// Boleta real de ejemplo (Grupo Vega, 26/10/2026), con la forma que devuelve la lectura de fotos
+const BOLETA_EJEMPLO = {proveedor:"Grupo Vega Distribución S.A.C.", ruc:"", documento:"BA10-11053277", fecha:"2026-10-26", total:344.34, items:[
+  {codigo:"770705", descripcion:"TRASL.GRAT LA LLAMA FOSFORO FAMILIAR X2", cantidad:1, unidadCompra:"UND", precioUnit:0.92, importe:0, bonificacion:true, productoKey:"llama", factor:1, nuevo:{nombre:"Fósforo La Llama Familiar x2", marca:"La Llama", linea:"Abarrotes", categoria:"Fósforos", unidadVenta:"paquete"}},
+  {codigo:"600124", descripcion:"LLAMA FOSFORO FAMILIARX2 CJ 100PAQ", cantidad:20, unidadCompra:"UN", precioUnit:2.05, importe:41, bonificacion:false, productoKey:"llama", factor:1},
+  {codigo:"395030", descripcion:"CLOROX MASCOTAS 5EN1 CJ 12U*930ML", cantidad:1, unidadCompra:"UN", precioUnit:5.77, importe:0, bonificacion:true, productoKey:"clorox-mascotas", factor:1, nuevo:{nombre:"Clorox Mascotas 5 en 1 930 ml", marca:"Clorox", linea:"Limpieza", categoria:"Desinfectantes", unidadVenta:"unidad"}},
+  {codigo:"395027", descripcion:"CLOROX EXP GEL MG FLORAL 5EN1 CJ 24U*500ML", cantidad:12, unidadCompra:"UN", precioUnit:4.81, importe:57.72, bonificacion:false, productoKey:"clorox-gel", factor:1, nuevo:{nombre:"Clorox Expert Gel Floral 5 en 1 500 ml", marca:"Clorox", linea:"Limpieza", categoria:"Desinfectantes", unidadVenta:"unidad"}},
+  {codigo:"371240", descripcion:"POETT FCO SANDIA SPLASH POT 3U*4.5LT", cantidad:1, unidadCompra:"POTE", precioUnit:44.75, importe:44.75, bonificacion:false, productoKey:"poett-sandia", factor:3, nuevo:{nombre:"Poett Sandía Splash 4.5 L", marca:"Poett", linea:"Limpieza", categoria:"Limpiatodo", unidadVenta:"unidad"}},
+  {codigo:"371223", descripcion:"POETT FLR PRIMAVERA CJ 3U*4500ML", cantidad:1, unidadCompra:"CAJA", precioUnit:44.75, importe:44.75, bonificacion:false, productoKey:"poett-primavera", factor:3, nuevo:{nombre:"Poett Primavera 4.5 L", marca:"Poett", linea:"Limpieza", categoria:"Limpiatodo", unidadVenta:"unidad"}},
+  {codigo:"371222", descripcion:"POETT FRSC LAVANDA CJ 3U*4500ML", cantidad:1, unidadCompra:"CAJA", precioUnit:44.75, importe:44.75, bonificacion:false, productoKey:"poett-lavanda-45", factor:3, nuevo:{nombre:"Poett Lavanda 4.5 L", marca:"Poett", linea:"Limpieza", categoria:"Limpiatodo", unidadVenta:"unidad"}},
+  {codigo:"371217", descripcion:"POETT FRESCA LAVANDA CJ 12U*880ML", cantidad:6, unidadCompra:"UN", precioUnit:3.36, importe:0, bonificacion:true, productoKey:"poett-lavanda-880", factor:1, nuevo:{nombre:"Poett Lavanda 880 ml", marca:"Poett", linea:"Limpieza", categoria:"Limpiatodo", unidadVenta:"unidad"}},
+  {codigo:"120611", descripcion:"NOSOTRAS INV/RAPIGEL ASA 24*10U", cantidad:4, unidadCompra:"UN", precioUnit:4.69, importe:0, bonificacion:true, productoKey:"nosotras", factor:1, nuevo:{nombre:"Nosotras Invisible Rapigel con alas x10", marca:"Nosotras", linea:"Cuidado personal", categoria:"Toallas higiénicas", unidadVenta:"paquete"}},
+  {codigo:"120611", descripcion:"NOSOTRAS INV/RAPIGEL ASA 24*10U", cantidad:1, unidadCompra:"CAJA", precioUnit:111.37, importe:111.37, bonificacion:false, productoKey:"nosotras", factor:24}
+]};
+
+// Modo prueba: los datos se guardan solo en este navegador
+const LLAVE = "kardex-prueba-v1";
 function memDB(){
   const cols = {}, subs = {};
+  try{ const g = JSON.parse(localStorage.getItem(LLAVE) || "{}"); for(const k in g) cols[k] = new Map(Object.entries(g[k])); }catch{}
+  const guardar = () => { try{ const o = {}; for(const k in cols) o[k] = Object.fromEntries(cols[k]); localStorage.setItem(LLAVE, JSON.stringify(o)); }catch{} };
   const copia = d => JSON.parse(JSON.stringify(d));
-  const emitir = c => { const docs = [...(cols[c]||new Map()).entries()].map(([id,d]) => ({id, exists:true, data:() => d}));
+  const emitir = c => { guardar(); const docs = [...(cols[c]||new Map()).entries()].map(([id,d]) => ({id, exists:true, data:() => d}));
     (subs[c]||[]).forEach(fn => fn({docs, metadata:{fromCache:false, hasPendingWrites:false}})); };
-  return { collection(c){ cols[c] ??= new Map(); subs[c] ??= []; const col = {
+  return { reiniciar(){ for(const k in cols){ cols[k].clear(); emitir(k); } }, collection(c){ cols[c] ??= new Map(); subs[c] ??= []; const col = {
     doc(id){ id = id || Math.random().toString(36).slice(2,10); return {
       id,
       set: async d => { cols[c].set(id, copia(d)); emitir(c); },
@@ -877,7 +902,7 @@ function memDB(){
 }
 async function init(){
   S.db = memDB();
-  $("#estadoConexion").textContent = "modo prueba · no se guarda";
+  $("#estadoConexion").textContent = "modo prueba · guardado en este equipo";
   const suscribir = (col, clave) => S.db.collection(col).onSnapshot(snap => {
     S[clave] = snap.docs.map(d => ({id:d.id, ...d.data()}));
     S.loaded[clave] = true;
