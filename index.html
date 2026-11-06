@@ -404,13 +404,13 @@ async function cargar(){
   if(S.cargando || !S.clave) return; S.cargando = true;
   try{
     const desde = new Date(Date.now() - 31*86400000).toISOString();
-    const [productos, proveedores, pedidos, pitems, recepciones, ritems, ventas, stock] = await Promise.all([
+    const [productos, proveedores, pedidos, pitems, recepciones, ritems, ventas, stock, config] = await Promise.all([
       api("productos?select=*&order=nombre"), api("proveedores?select=*&order=nombre"),
       api("pedidos?select=*&order=creado.desc&limit=300"), api("pedido_items?select=*"),
       api("recepciones?select=*&order=fecha.desc&limit=500"), api("recepcion_items?select=*"),
-      api(`ventas?select=*&creado=gte.${desde}&order=creado.desc`), api("stock_productos?select=*")
+      api(`ventas?select=*&creado=gte.${desde}&order=creado.desc`), api("stock_productos?select=*"), api("config_tienda?select=*").catch(() => [])
     ]);
-    Object.assign(S, {productos, proveedores, pedidos, pitems, recepciones, ritems, ventas, conectado:true});
+    Object.assign(S, {productos, proveedores, pedidos, pitems, recepciones, ritems, ventas, config: config[0] || {}, conectado:true});
     S.stock = new Map(stock.map(s => [s.producto_id, toNum(s.recibido) - toNum(s.vendido) + toNum(s.ajustado)]));
     marcarVivo(true);
   }catch(e){ marcarVivo(false); if(e.status === 401 || e.status === 403) salir(); }
@@ -521,7 +521,7 @@ function vistaInicio(){
   const recMes = S.recepciones.filter(r => (r.fecha || "").startsWith(hoy().slice(0,7)));
   const compradoMes = recMes.reduce((a,r) => a+toNum(r.total), 0);
   const valor = [...C.values()].reduce((a,c) => a+c.valor, 0);
-  const pend = S.pedidos.filter(p => ["pendiente","parcial"].includes(p.estado));
+  const pend = S.pedidos.filter(p => p.estado === "pendiente");
   const creds = S.recepciones.map(r => ({r, e:estadoCredito(r)})).filter(x => x.e);
   const credUrg = creds.filter(x => x.e.d <= DIAS_AVISO_CREDITO);
   const riesgo = S.productos.filter(p => ["agotado","quiebre","bajo"].includes(C.get(p.id).estado)).sort((a,b) => ORDEN[C.get(a.id).estado]-ORDEN[C.get(b.id).estado]);
@@ -540,7 +540,7 @@ function vistaInicio(){
 
   return `
   <div class="row between"><div><h1>Resumen de inventario</h1><p class="sub">${fechaLarga(hoy())} · el stock se actualiza solo con cada mercadería recibida.</p></div>
-    <button class="btn wa" data-act="wa-resumen">${waIcon()} Enviar resumen por WhatsApp</button></div>
+    <button class="btn wa" data-act="wa-resumen">${waIcon()} Enviar resumen${S.config?.whatsapp ? " a +"+esc(S.config.whatsapp.replace(/^51/,"51 ")) : " por WhatsApp"}</button></div>
   <div class="kpis">
     <button class="kpi k1" data-go="compras"><span class="kico">${ICON.compras}</span><span class="lab">Comprado este mes</span><span class="val">${soles(compradoMes)}</span><span class="note">${recMes.length} recepción${recMes.length===1?"":"es"}</span></button>
     <button class="kpi k2" data-go="inventario"><span class="kico">${ICON.inventario}</span><span class="lab">Valor del stock</span><span class="val">${soles(valor)}</span><span class="note">${S.productos.length} productos, a costo real</span></button>
@@ -574,14 +574,20 @@ function mensajeResumen(){
   const L = [`*Kardex · ${fechaLarga(hoy())}*`, `Valor del inventario: ${soles(valor)} (${S.productos.length} productos)`];
   const riesgo = S.productos.filter(p => ["agotado","quiebre","bajo"].includes(C.get(p.id).estado));
   if(riesgo.length){ L.push("", "*Por agotarse:*"); riesgo.forEach(p => { const c = C.get(p.id); L.push(`• ${p.nombre}: quedan ${num(c.stock,1)}${c.sugerido ? ` → pedir ${c.sugerido.cant} ${c.sugerido.unidad.toLowerCase()}` : ""}`); }); }
-  const creds = S.recepciones.map(r => ({r, e:estadoCredito(r)})).filter(x => x.e && x.e.d <= DIAS_AVISO_CREDITO);
-  if(creds.length){ L.push("", "*Créditos por pagar:*"); creds.forEach(({r,e}) => L.push(`• ${prov(r.proveedor_id)?.nombre || "Proveedor"} ${soles(r.total)} – ${e.txt}`)); }
-  const atras = S.pedidos.filter(p => ["pendiente","parcial"].includes(p.estado) && p.entrega && p.entrega < hoy());
+  const creds = S.recepciones.map(r => ({r, e:estadoCredito(r)})).filter(x => x.e).sort((a,b) => a.e.d - b.e.d);
+  if(creds.length){ L.push("", `*Créditos por pagar (${soles(creds.reduce((a,x) => a+toNum(x.r.total),0))}):*`); creds.forEach(({r,e}) => L.push(`• ${e.d <= DIAS_AVISO_CREDITO ? "⚠️ " : ""}${prov(r.proveedor_id)?.nombre || "Proveedor"} ${soles(r.total)} – ${e.txt}`)); }
+  const atras = S.pedidos.filter(p => p.estado === "pendiente" && p.entrega && p.entrega < hoy());
   if(atras.length){ L.push("", "*Pedidos atrasados:*"); atras.forEach(p => L.push(`• ${prov(p.proveedor_id)?.nombre || "Proveedor"} (esperado ${fecha(p.entrega)})`)); }
+  const porLlegar = S.pedidos.filter(p => p.estado === "pendiente" && !(p.entrega && p.entrega < hoy()));
+  if(porLlegar.length){ L.push("", "*Pedidos por llegar:*"); porLlegar.forEach(p => L.push(`• ${prov(p.proveedor_id)?.nombre || "Proveedor"} – llega ${fecha(p.entrega)}`)); }
+  // Detalle de stock por línea
+  const lineas = {}; S.productos.forEach(p => (lineas[p.linea || "Sin línea"] ??= []).push(p));
+  if(S.productos.length){ L.push("", "*Stock actual:*");
+    Object.keys(lineas).sort().forEach(l => { L.push(`_${l}_`); lineas[l].sort((a,b) => a.nombre.localeCompare(b.nombre)).forEach(p => { const c = C.get(p.id); L.push(`• ${p.codigo ? p.codigo+" " : ""}${p.nombre}: ${num(c.stock,1)} ${plural(uv(p),c.stock)}`); }); }); }
   return L.join("\n");
 }
 function abrirWhatsApp(texto){
-  const n = (LS.get("kardex-wa") || "").replace(/\D/g,"");
+  const n = (S.config?.whatsapp || LS.get("kardex-wa") || "").replace(/\D/g,"");
   const url = `https://wa.me/${n}?text=${encodeURIComponent(texto)}`;
   const a = document.createElement("a"); a.href = url; a.target = "_blank"; a.rel = "noopener"; document.body.appendChild(a); a.click(); a.remove();
 }
@@ -625,10 +631,18 @@ function panelVenta(p){
 // ----- Pedidos -----
 function vistaPedidos(){
   if(S.pedido) return formPedido();
-  const act = S.pedidos.filter(p => ["pendiente","parcial"].includes(p.estado));
-  const cer = S.pedidos.filter(p => !["pendiente","parcial"].includes(p.estado)).slice(0,20);
+  const act = S.pedidos.filter(p => p.estado === "pendiente");
+  const hist = S.pedidos.filter(p => p.estado !== "pendiente");
+  const f = S.fh || "todos", estadoDe = pe => pe.estado === "recibido" ? "completo" : pe.estado === "pendiente" ? "pendiente" : avancePedido(pe).recepciones ? "incompleto" : "cancelado";
+  const cer = hist.filter(pe => f === "todos" || estadoDe(pe) === f).slice(0, 60);
+  // Cumplimiento por proveedor: pedidos completos y % de unidades que llegaron
+  const porProv = {};
+  hist.forEach(pe => { const k = prov(pe.proveedor_id)?.nombre || "Proveedor", a = avancePedido(pe), e = estadoDe(pe);
+    const x = porProv[k] ??= {total:0, completo:0, incompleto:0, cancelado:0, pedidas:0, llegaron:0};
+    x.total++; x[e]++; a.lineas.forEach(l => { x.pedidas += l.unidadesPedidas; x.llegaron += l.unidadesRecibidas; }); });
+  const cuenta = e => hist.filter(pe => estadoDe(pe) === e).length;
   const tarjeta = pe => { const a = avancePedido(pe); const pr = prov(pe.proveedor_id);
-    const est = {pendiente:["warn","Por llegar"], parcial:["warn","Llegó incompleto"], recibido:["ok","Recibido completo"], cerrado:["gris","Cerrado"]}[pe.estado];
+    const est = {pendiente:["warn","Por llegar"], completo:["ok","Recibido completo"], incompleto:["bad","Llegó incompleto"], cancelado:["gris","Cancelado"]}[estadoDe(pe)];
     return `<details class="card" style="gap:8px">
       <summary class="row between" style="cursor:pointer;list-style:none">
         <span><b>${esc(pr?.nombre || "Proveedor")}</b><br><span class="small muted">Pedido ${fecha(pe.fecha)} · llega ${fecha(pe.entrega)} · ${a.lineas.length} productos</span></span>
@@ -638,13 +652,22 @@ function vistaPedidos(){
       <div class="tbl"><table><thead><tr><th>Producto</th><th class="r">Pedido</th><th class="r">Llegó</th><th class="r">Falta</th></tr></thead><tbody>
         ${a.lineas.map(l => { const p = prod(l.producto_id); return `<tr><td>${esc(p?.nombre || "—")}</td><td class="r">${num(l.cantidad,2)} ${esc(l.unidad_compra)}</td><td class="r">${num(l.unidadesRecibidas,1)}</td><td class="r" style="${l.pendiente?"color:var(--bad);font-weight:600":""}">${l.pendiente ? num(l.pendiente,1)+" "+esc(plural(uv(p),l.pendiente)) : "—"}</td></tr>`; }).join("")}
       </tbody></table></div>
-      <div class="row">${["pendiente","parcial"].includes(pe.estado) ? `<button class="btn primary" data-act="recibir-pedido" data-id="${pe.id}" data-modo="completo">✓ Llegó completo</button><button class="btn" data-act="recibir-pedido" data-id="${pe.id}" data-modo="incompleto">Llegó incompleto</button><button class="btn" data-act="cerrar-pedido" data-id="${pe.id}">${pe.estado==="parcial" ? "Ya no llegará lo que falta" : "Cancelar pedido"}</button>` : ""}<button class="btn danger" data-act="borrar-pedido" data-id="${pe.id}">🗑 Borrar pedido</button></div>
+      <div class="row">${pe.estado === "pendiente" ? `<button class="btn primary" data-act="recibir-pedido" data-id="${pe.id}" data-modo="completo">✓ Llegó completo</button><button class="btn" data-act="recibir-pedido" data-id="${pe.id}" data-modo="incompleto">Llegó incompleto</button><button class="btn" data-act="cerrar-pedido" data-id="${pe.id}">Cancelar pedido</button>` : ""}<button class="btn danger" data-act="borrar-pedido" data-id="${pe.id}">🗑 Borrar pedido</button></div>
     </details>`; };
+  const filtros = [["todos","Todos",hist.length],["completo","Recibido completo",cuenta("completo")],["incompleto","Llegó incompleto",cuenta("incompleto")],["cancelado","Cancelado",cuenta("cancelado")]];
   return `
-  <div class="row between"><div><h1>Pedidos</h1><p class="sub">Lo que pediste al proveedor y aún no llega. Al recibirlo, marcas lo que llegó, lo que faltó o vino dañado.</p></div>
-    <button class="btn primary" data-act="nuevo-pedido">+ Nuevo pedido</button></div>
+  <div class="row between"><div><h1>Pedidos</h1><p class="sub">Sube la boleta del pedido. Cuando llegue, lo recibes en Recibir mercadería y queda en el historial.</p></div>
+    <button class="btn primary" data-act="subir-boleta">📷 Subir boleta</button></div>
+  <h2>Por llegar</h2>
   ${act.length ? act.map(tarjeta).join("") : `<div class="card empty"><p>No hay pedidos por llegar.</p></div>`}
-  ${cer.length ? `<h2>Anteriores</h2>${cer.map(tarjeta).join("")}` : ""}`;
+  ${hist.length ? `<section class="card"><div><h2>Cumplimiento de proveedores</h2><p class="sub">Cuántos pedidos llegaron completos y qué parte de lo pedido llegó.</p></div>
+    <div class="tbl"><table><thead><tr><th>Proveedor</th><th class="r">Pedidos</th><th class="r">Completos</th><th class="r">Incompletos</th><th class="r">Cancelados</th><th class="r">Llegó de lo pedido</th></tr></thead><tbody>
+      ${Object.entries(porProv).sort((a,b) => b[1].total - a[1].total).map(([k,x]) => { const pct = x.pedidas ? Math.round(x.llegaron/x.pedidas*100) : 0;
+        return `<tr><td><b>${esc(k)}</b></td><td class="r">${x.total}</td><td class="r">${x.completo}</td><td class="r">${x.incompleto}</td><td class="r">${x.cancelado}</td><td class="r"><span class="pill ${pct >= 95 ? "ok" : pct >= 80 ? "warn" : "bad"}">${pct}%</span></td></tr>`; }).join("")}
+    </tbody></table></div></section>
+  <div class="row between"><h2>Historial de pedidos</h2>
+    <span class="seg" role="group" aria-label="Filtrar">${filtros.map(([v,t,n]) => `<button data-act="filtro-hist" data-v="${v}" aria-pressed="${f===v}">${t} (${n})</button>`).join("")}</span></div>
+  ${cer.length ? cer.map(tarjeta).join("") : `<div class="card empty"><p>No hay pedidos en este filtro.</p></div>`}` : ""}`;
 }
 function formPedido(){
   const d = S.pedido;
@@ -738,7 +761,7 @@ async function leerBoletaPedido(){
 const UNIDADES_COMPRA = ["UN","CAJA","PAQ","TIRA","POTE","SACO","BOLSA","DOC","PACK","FARDO","KG","LT"];
 function vistaRecibir(){
   if(!S.rec){
-    const pend = S.pedidos.filter(p => ["pendiente","parcial"].includes(p.estado));
+    const pend = S.pedidos.filter(p => p.estado === "pendiente");
     return `<div><h1>Recibir mercadería</h1><p class="sub">Elige la boleta o pedido que llegó y marca si vino completo. Si faltó algo, el pago se recalcula solo.</p></div>
     ${pend.length ? `<section class="card"><div><h2>Pedidos por recibir</h2><p class="sub">Cuando llegue el reparto, elige cómo llegó.</p></div>${pend.map(pe => { const a = avancePedido(pe), monto = a.lineas.reduce((s,l) => s + (l.bonificacion ? 0 : l.pendiente/toNum(l.factor||1)*toNum(l.precio_unit)), 0);
       return `<div class="pedido-rec">
@@ -1036,7 +1059,7 @@ async function guardarRecepcion(btn){
     const total = d.pedidoId ? items.reduce((a,i) => a+i.importe, 0) : (toNum(d.total) || items.reduce((a,i) => a+i.importe, 0));
     const [rec] = await insertar("recepciones", {pedido_id:d.pedidoId, proveedor_id:pr.id, fecha:d.fecha || hoy(), documento:d.documento.trim() || null, total, condicion:d.condicion, dias_credito: d.condicion === "credito" ? toNum(d.dias) : null, vence: d.condicion === "credito" ? sumarDias(d.fecha || hoy(), toNum(d.dias)) : null, origen: d.leida ? "foto" : "manual"});
     if(items.length) await insertar("recepcion_items", items.map(i => ({...i, recepcion_id:rec.id})));
-    if(d.pedidoId){ await cargar(); const pe = S.pedidos.find(p => p.id === d.pedidoId); if(pe){ const a = avancePedido(pe); await actualizar("pedidos", pe.id, {estado: a.lineas.every(l => l.pendiente <= 0) ? "recibido" : "parcial"}); } }
+    if(d.pedidoId){ await cargar(); const pe = S.pedidos.find(p => p.id === d.pedidoId); if(pe){ const a = avancePedido(pe); await actualizar("pedidos", pe.id, {estado: a.lineas.every(l => l.pendiente <= 0) ? "recibido" : "cerrado"}); } }
     S.rec = null; await refrescar(true); ir("inicio");
     toast(`Mercadería guardada: ${grupos.size} producto${grupos.size===1?"":"s"}.${d.condicion==="credito" ? " Crédito anotado." : ""}`);
   }catch(e){ btn.disabled = false; btn.textContent = "Guardar en el inventario"; toast("No se pudo guardar: " + (e.message || "revisa tu conexión")); }
@@ -1113,7 +1136,7 @@ function vistaCompras(){
     return `<section class="card">
       <div class="row between"><h2>${fechaLarga(f)}</h2><span class="row"><b class="num">${soles(tot)}</b><button class="btn sm danger" data-act="borrar-dia" data-f="${f}">Borrar este día</button></span></div>
       ${rs.map(r => { const its = S.ritems.filter(i => i.recepcion_id === r.id); return `<details style="border-top:1px solid var(--line);padding-top:8px">
-        <summary class="row between" style="cursor:pointer;list-style:none"><span><b>${esc(prov(r.proveedor_id)?.nombre || "—")}</b> <span class="mono muted">${esc(r.documento || "")}</span><br><span class="small muted">${its.length} líneas · ${r.condicion === "credito" ? "crédito" : "contado"}${r.origen === "foto" ? " · leída de foto" : ""}</span></span><b class="num">${soles(r.total)}</b></summary>
+        <summary class="row between" style="cursor:pointer;list-style:none"><span><b>${esc(prov(r.proveedor_id)?.nombre || "—")}</b> <span class="mono muted">${esc(r.documento || "")}</span><br><span class="small muted">${its.length} líneas · ${r.condicion === "credito" ? "crédito" : "contado"}${r.origen === "foto" ? " · leída de foto" : ""}</span></span><span class="row" style="gap:8px"><b class="num">${soles(r.total)}</b><button class="btn sm danger" data-act="borrar-rec" data-id="${r.id}">🗑 Borrar boleta</button></span></summary>
         <div class="tbl" style="margin-top:8px"><table><thead><tr><th>Producto</th><th class="r">Llegó</th><th class="r">Importe</th></tr></thead><tbody>
           ${its.map(i => `<tr><td>${esc(prod(i.producto_id)?.nombre || "—")}${i.bonificacion ? ' <span class="pill bonus">Bonif.</span>' : ""}${i.observacion ? ` <span class="pill warn">${esc(i.observacion)}</span>` : ""}</td><td class="r">${num(i.cantidad,2)} ${esc(i.unidad_compra)}</td><td class="r">${soles(i.importe)}</td></tr>`).join("")}
         </tbody></table></div>
@@ -1126,7 +1149,7 @@ const rangoDia = f => { const a = new Date(f+"T00:00:00"), b = new Date(f+"T00:0
 async function limpiarHuerfanos(){
   await cargar();
   for(const pe of S.pedidos){ if(!["recibido","parcial"].includes(pe.estado)) continue;
-    const a = avancePedido(pe), est = a.recepciones === 0 ? "pendiente" : a.lineas.every(l => l.pendiente <= 0) ? "recibido" : "parcial";
+    const a = avancePedido(pe), est = a.recepciones === 0 ? "pendiente" : a.lineas.every(l => l.pendiente <= 0) ? "recibido" : "cerrado";
     if(est !== pe.estado) await actualizar("pedidos", pe.id, {estado:est}); }
   const usados = new Set([...S.ritems, ...S.pitems].map(i => i.producto_id));
   for(const p of S.productos) if(!usados.has(p.id)){ try{ await borrar("productos", p.id); }catch{} }
@@ -1167,7 +1190,7 @@ function vistaMas(){
     <button class="btn big" data-go="proveedores">Proveedores</button>
   </section>
   <section class="card"><h2>WhatsApp para los avisos</h2><p class="sub" style="margin:0">Número que recibe el resumen (con código de país, ej. 51987654321). Si lo dejas vacío, WhatsApp te deja elegir el contacto.</p>
-    <div class="row"><input id="wa-num" class="grow" inputmode="tel" value="${esc(LS.get("kardex-wa") || "")}" placeholder="51…"><button class="btn" data-act="guardar-wa">Guardar</button></div></section>
+    <div class="row"><input id="wa-num" class="grow" inputmode="tel" value="${esc(S.config?.whatsapp || "")}" placeholder="51 912 605 071"><button class="btn" data-act="guardar-wa">Guardar</button></div></section>
   <section class="card"><h2>Borrar datos de prueba</h2>
     <p class="sub" style="margin:0">Borra todo lo registrado en una fecha: compras, ventas, pedidos y conteos. Los productos que queden sin ningún movimiento también se borran.</p>
     <div class="row"><input type="date" id="del-fecha" value="${hoy()}" style="width:auto"><button class="btn danger" data-act="borrar-fecha">Borrar lo de esa fecha</button></div>
@@ -1187,7 +1210,7 @@ document.addEventListener("click", async e => {
     else if(a === "cerrar") cerrarFicha();
     else if(a === "wa-resumen") abrirWhatsApp(mensajeResumen());
     else if(a === "wa-creditos"){ const L = ["*Créditos por pagar*"]; S.recepciones.filter(r => r.condicion === "credito" && !r.pagado).sort((x,y) => (x.vence||"").localeCompare(y.vence||"")).forEach(r => L.push(`• ${prov(r.proveedor_id)?.nombre || "Proveedor"} ${soles(r.total)} – ${estadoCredito(r).txt}`)); abrirWhatsApp(L.join("\n")); }
-    else if(a === "guardar-wa"){ LS.set("kardex-wa", $("#wa-num").value.trim()); toast("Número guardado."); }
+    else if(a === "guardar-wa"){ let n = $("#wa-num").value.replace(/D/g,""); if(n.length === 9) n = "51" + n; await api("config_tienda", {method:"POST", body:{id:1, whatsapp:n || null}, prefer:"resolution=merge-duplicates"}); S.config = {...S.config, whatsapp:n}; render(); toast(n ? "Número guardado: los avisos irán a +" + n : "Número borrado."); }
     else if(a === "salir"){ salir(); }
     // Vender
     else if(a === "sel-venta"){ S.venta.sel = id || null; const p = prod(id); S.venta.cant = 1; S.venta.precio = p?.precio_venta ?? ""; render(); if(id) setTimeout(() => $("#panelVenta")?.scrollIntoView({behavior:"smooth", block:"center"}), 30); }
@@ -1213,6 +1236,7 @@ document.addEventListener("click", async e => {
     else if(a === "recibir-directo") nuevaRecepcion(null);
     else if(a === "subir-boleta"){ if(!S.pedido) S.pedido = nuevoPedidoVacio(); ir("pedidos"); setTimeout(() => $("#foto-pedido")?.click(), 80); }
     else if(a === "leer-pedido") leerBoletaPedido();
+    else if(a === "filtro-hist"){ S.fh = t.dataset.v; render(); }
     else if(a === "cond-pedido"){ S.pedido.condicion = t.dataset.v; render(); }
     else if(a === "zoom-pedido") abrirZoom(S.pedido.url);
     else if(a === "girar-pedido"){ S.pedido.img = await girarImagen(S.pedido.img); S.pedido.url = S.pedido.img.src; render(); }
@@ -1229,7 +1253,7 @@ document.addEventListener("click", async e => {
     else if(a === "zoom-mas" || a === "zoom-menos"){ S.zoomW = Math.max(100, Math.min(400, (S.zoomW || 100) + (a === "zoom-mas" ? 50 : -50))); $("#zoomImg").style.width = S.zoomW + "%"; }
     else if(a === "girar"){ S.rec.img = await girarImagen(S.rec.img); S.rec.url = S.rec.img.src; render(); }
     // Borrar pruebas
-    else if(a === "borrar-rec"){ if(!await confirmar(t, "¿Seguro? Tocar otra vez")) return; t.disabled = true; await borrar("recepciones", id); await limpiarHuerfanos(); await refrescar(true); toast("Boleta borrada. El stock se recalculó."); }
+    else if(a === "borrar-rec"){ e.preventDefault(); if(!await confirmar(t, "¿Seguro? Tocar otra vez")) return; t.disabled = true; await borrar("recepciones", id); await limpiarHuerfanos(); await refrescar(true); toast("Boleta borrada. El stock se recalculó."); }
     else if(a === "borrar-pedido"){ if(!await confirmar(t, "¿Borrar pedido y lo recibido? Tocar otra vez")) return; t.disabled = true;
       await api(`recepciones?pedido_id=eq.${id}`, {method:"DELETE"}); await borrar("pedidos", id); await limpiarHuerfanos(); await refrescar(true); toast("Pedido borrado."); }
     else if(a === "borrar-dia"){ if(!await confirmar(t, "¿Borrar todo el día? Tocar otra vez")) return; t.disabled = true; await api(`recepciones?fecha=eq.${t.dataset.f}`, {method:"DELETE"}); await limpiarHuerfanos(); await refrescar(true); toast(`Compras del ${fecha(t.dataset.f)} borradas.`); }
