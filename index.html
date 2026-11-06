@@ -660,7 +660,7 @@ function vistaRecibir(){
   if(!S.rec){
     const pend = S.pedidos.filter(p => ["pendiente","parcial"].includes(p.estado));
     return `<div><h1>Recibir mercadería</h1><p class="sub">Elige la boleta o pedido que llegó y marca si vino completo. Si faltó algo, el pago se recalcula solo.</p></div>
-    ${pend.length ? `<section class="card"><div><h2>Pedidos por recibir</h2><p class="sub">Cuando llegue el reparto, elige cómo llegó.</p></div>${pend.map(pe => { const a = avancePedido(pe), monto = a.lineas.reduce((s,l) => s + l.pendiente/toNum(l.factor||1)*toNum(l.precio_unit), 0);
+    ${pend.length ? `<section class="card"><div><h2>Pedidos por recibir</h2><p class="sub">Cuando llegue el reparto, elige cómo llegó.</p></div>${pend.map(pe => { const a = avancePedido(pe), monto = a.lineas.reduce((s,l) => s + (l.bonificacion ? 0 : l.pendiente/toNum(l.factor||1)*toNum(l.precio_unit)), 0);
       return `<div class="pedido-rec">
         <div><b>${esc(prov(pe.proveedor_id)?.nombre || "Proveedor")}</b> <span class="pill ${pe.estado==="parcial"?"bad":"warn"}">${pe.estado==="parcial" ? "Falta una parte" : "Por llegar"}</span><br>
           <span class="small muted">${pe.documento ? "Boleta "+esc(pe.documento)+" · " : ""}pedido ${fecha(pe.fecha)} · llega ${fecha(pe.entrega)} · ${a.lineas.filter(l => l.pendiente > 0).length} productos${monto ? " · "+soles(monto) : ""}</span></div>
