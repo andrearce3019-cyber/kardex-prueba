@@ -83,7 +83,7 @@ button.kpi{cursor:pointer}button.kpi:hover{border-color:var(--accent)}
 .pill.ok{background:var(--ok-weak);color:var(--ok)}
 .pill.bajo,.pill.warn{background:var(--warn-weak);color:var(--warn)}
 .pill.quiebre,.pill.agotado,.pill.bad{background:var(--bad-weak);color:var(--bad)}
-.pill.sindatos,.pill.gris{background:var(--soft);color:var(--muted)}
+.pill.sindatos,.pill.sinmin,.pill.gris{background:var(--soft);color:var(--muted)}
 .pill.bonus{background:var(--bonus-weak);color:var(--bonus)}
 .pill.tag{background:var(--accent-weak);color:var(--accent)}
 .alerta{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;padding:10px 12px;border-radius:10px;background:var(--soft)}
@@ -352,7 +352,7 @@ const S = {
   view: (location.hash || "#inicio").slice(1), f: {q:"", linea:"", marca:"", prov:""},
   venta: {q:"", sel:null, cant:1, precio:""}, pedido: null, rec: null, abierto: null
 };
-const VIEWS = ["inicio","pedidos","recibir","compras","inventario","creditos","proveedores","pruebas","mas"];
+const VIEWS = ["inicio","alertas","pedidos","recibir","compras","inventario","creditos","proveedores","pruebas","mas"];
 if(!VIEWS.includes(S.view)) S.view = "inicio";
 
 // ---------- Utilidades ----------
@@ -437,8 +437,9 @@ function calc(p){
   let estado = "ok";
   if(stock <= 0) estado = "agotado";
   else if((toNum(p.stock_minimo) > 0 && stock <= toNum(p.stock_minimo)) || (cobertura !== null && cobertura <= DIAS_QUIEBRE)) estado = "quiebre";
+  else if(toNum(p.stock_minimo) > 0 && stock <= toNum(p.stock_minimo) * 1.5) estado = "bajo";
   else if(cobertura !== null && cobertura <= DIAS_BAJO) estado = "bajo";
-  else if(consumo === null && !(toNum(p.stock_minimo) > 0)) estado = "sindatos";
+  else if(!(toNum(p.stock_minimo) > 0)) estado = "sinmin";
   let sugerido = null;
   if(consumo > 0){ const falta = consumo*DIAS_PEDIDO - stock; if(falta > 0){
     const big = Object.entries(p.presentaciones||{}).filter(([,f]) => f > 1).sort((a,b) => b[1]-a[1])[0];
@@ -446,8 +447,10 @@ function calc(p){
   const provs = new Set(its.map(i => S.recepciones.find(r => r.id === i.recepcion_id)?.proveedor_id).filter(Boolean));
   return {stock, costo, bon, vendidoHoy, consumo, cobertura, estado, sugerido, provs, valor: costo !== null ? Math.max(0,stock)*costo : 0};
 }
-const ESTADO = {agotado:"Agotado", quiebre:"Por agotarse", bajo:"Stock bajo", ok:"Bien", sindatos:"Sin ventas aún"};
-const ORDEN = {agotado:0, quiebre:1, bajo:2, sindatos:3, ok:4};
+const ESTADO = {agotado:"Agotado", quiebre:"Bajo el mínimo", bajo:"Cerca del mínimo", ok:"Bien", sinmin:"Sin mínimo"};
+const ORDEN = {agotado:0, quiebre:1, bajo:2, sinmin:3, ok:4};
+// Búsqueda por nombre, marca, línea, código propio o descripción del proveedor
+const coincide = (p, q) => norm([p.codigo, p.nombre, p.marca, p.linea, p.categoria, ...(p.alias || []).filter(a => !a.startsWith("#"))].join(" ")).includes(q) || norm(p.codigo || "").replace(/ /g,"").includes(q.replace(/ /g,""));
 const pill = e => `<span class="pill ${e}">${ESTADO[e]}</span>`;
 const cobTxt = c => c.cobertura === null ? "—" : c.cobertura > 365 ? "+1 año" : num(c.cobertura, c.cobertura < 10 ? 1 : 0)+" días";
 
@@ -477,13 +480,15 @@ const ICON = {
   creditos:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20M6 15h4"/></svg>',
   inventario:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>',
   proveedores:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 7h13v10H1zM14 10h4l3 3v4h-7"/><circle cx="5.5" cy="18" r="1.5"/><circle cx="17.5" cy="18" r="1.5"/></svg>',
+  alertas:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg>',
   pruebas:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 11v5M14 11v5"/></svg>'
 };
 function pintarNav(){
-  const tabs = [["inicio","Resumen de inventario"],["pedidos","Pedidos"],["recibir","Recibir mercadería"],["compras","Historial de compras"],["creditos","Créditos"],["inventario","Inventario valorizado"],["proveedores","Proveedores"],["pruebas","Borrar pruebas"]];
+  const nAl = S.conectado ? totalAlertas() : 0;
+  const tabs = [["inicio","Resumen de inventario"],["alertas","Alertas" + (nAl ? ` (${nAl})` : "")],["pedidos","Pedidos"],["recibir","Recibir mercadería"],["compras","Historial de compras"],["creditos","Créditos"],["inventario","Inventario valorizado"],["proveedores","Proveedores"],["pruebas","Borrar pruebas"]];
   $("#tabs").innerHTML = tabs.map(([v,t]) => `<button data-go="${v}" aria-current="${S.view===v}">${ICON[v]}<span>${t}</span></button>`).join("");
-  const enMas = ["inventario","creditos","proveedores","mas"].includes(S.view);
-  $("#bottom").innerHTML = [["inicio","Resumen"],["pedidos","Pedidos"],["recibir","Recibir"],["compras","Historial"],["mas","Más"]]
+  const enMas = ["inventario","compras","creditos","proveedores","pruebas","mas"].includes(S.view);
+  $("#bottom").innerHTML = [["inicio","Resumen"],["alertas", nAl ? `Alertas (${nAl})` : "Alertas"],["pedidos","Pedidos"],["recibir","Recibir"],["mas","Más"]]
     .map(([v,t]) => `<button data-go="${v}" aria-current="${v==="mas" ? enMas : S.view===v}">${ICON[v]}<span>${t}</span></button>`).join("");
 }
 function ir(v){ S.view = v; try{ history.replaceState(null, "", "#"+v); }catch{} render(); window.scrollTo(0,0); }
@@ -495,7 +500,7 @@ function render(){
   if(!S.clave){ $("#tabs").innerHTML = ""; $("#bottom").innerHTML = ""; m.innerHTML = vistaLogin(); return; }
   pintarNav();
   if(!S.conectado){ m.innerHTML = `<div class="card empty"><span class="spin"></span><p>Cargando tu tienda…</p></div>`; return; }
-  const V = {inicio:vistaInicio, vender:vistaVender, pedidos:vistaPedidos, recibir:vistaRecibir, inventario:vistaInventario, compras:vistaCompras, pruebas:vistaPruebas, creditos:vistaCreditos, proveedores:vistaProveedores, mas:vistaMas};
+  const V = {inicio:vistaInicio, vender:vistaVender, pedidos:vistaPedidos, recibir:vistaRecibir, inventario:vistaInventario, alertas:vistaAlertas, compras:vistaCompras, pruebas:vistaPruebas, creditos:vistaCreditos, proveedores:vistaProveedores, mas:vistaMas};
   m.innerHTML = V[S.view]();
 }
 
@@ -528,7 +533,7 @@ function vistaInicio(){
   const atrasados = pend.filter(p => p.entrega && p.entrega < hoy());
 
   const f = S.f, q = norm(f.q);
-  const ps = S.productos.filter(p => (!f.linea || (p.linea||"Sin línea") === f.linea) && (!f.marca || (p.marca||"Sin marca") === f.marca) && (!f.prov || C.get(p.id).provs.has(f.prov)) && (!q || norm([p.nombre,p.marca,p.categoria].join(" ")).includes(q)))
+  const ps = S.productos.filter(p => (!f.linea || (p.linea||"Sin línea") === f.linea) && (!f.marca || (p.marca||"Sin marca") === f.marca) && (!f.prov || C.get(p.id).provs.has(f.prov)) && (!q || coincide(p, q)))
     .sort((a,b) => ORDEN[C.get(a.id).estado]-ORDEN[C.get(b.id).estado] || a.nombre.localeCompare(b.nombre));
   const opts = (vals, sel, todos) => `<option value="">${todos}</option>` + [...new Set(vals)].sort().map(v => `<option value="${esc(v)}" ${v===sel?"selected":""}>${esc(v)}</option>`).join("");
 
@@ -540,7 +545,7 @@ function vistaInicio(){
 
   return `
   <div class="row between"><div><h1>Resumen de inventario</h1><p class="sub">${fechaLarga(hoy())} · el stock se actualiza solo con cada mercadería recibida.</p></div>
-    <button class="btn wa" data-act="wa-resumen">${waIcon()} Enviar resumen${S.config?.whatsapp ? " a +"+esc(S.config.whatsapp.replace(/^51/,"51 ")) : " por WhatsApp"}</button></div>
+    <div class="row"><button class="btn" data-act="excel-stock">⬇ Descargar Excel</button><button class="btn wa" data-act="wa-resumen">${waIcon()} Enviar resumen${S.config?.whatsapp ? " a +"+esc(S.config.whatsapp.replace(/^51/,"51 ")) : " por WhatsApp"}</button></div></div>
   <div class="kpis">
     <button class="kpi k1" data-go="compras"><span class="kico">${ICON.compras}</span><span class="lab">Comprado este mes</span><span class="val">${soles(compradoMes)}</span><span class="note">${recMes.length} recepción${recMes.length===1?"":"es"}</span></button>
     <button class="kpi k2" data-go="inventario"><span class="kico">${ICON.inventario}</span><span class="lab">Valor del stock</span><span class="val">${soles(valor)}</span><span class="note">${S.productos.length} productos, a costo real</span></button>
@@ -551,7 +556,7 @@ function vistaInicio(){
   <section class="card">
     <div class="row between"><h2>Stock en vivo</h2><span class="small muted">${ps.length} de ${S.productos.length} productos</span></div>
     <div class="filters">
-      <input id="f-q" type="search" placeholder="Buscar producto" value="${esc(f.q)}" aria-label="Buscar">
+      <input id="f-q" type="search" placeholder="Buscar por nombre o código (ej. LIM-0005)" value="${esc(f.q)}" aria-label="Buscar">
       <select id="f-linea" aria-label="Línea">${opts(S.productos.map(p => p.linea || "Sin línea"), f.linea, "Todas las líneas")}</select>
       <select id="f-marca" aria-label="Marca">${opts(S.productos.map(p => p.marca || "Sin marca"), f.marca, "Todas las marcas")}</select>
       <select id="f-prov" aria-label="Proveedor"><option value="">Todos los proveedores</option>${S.proveedores.map(v => `<option value="${v.id}" ${v.id===f.prov?"selected":""}>${esc(v.nombre)}</option>`).join("")}</select>
@@ -611,7 +616,7 @@ function vistaVender(){
 }
 function tilesVenta(){
   const q = norm(S.venta.q);
-  const ps = S.productos.filter(p => !q || norm([p.nombre,p.marca,p.categoria].join(" ")).includes(q)).slice(0,60);
+  const ps = S.productos.filter(p => !q || coincide(p, q)).slice(0,60);
   return ps.map(p => { const s = S.stock.get(p.id) ?? 0; return `<button class="tile" data-act="sel-venta" data-id="${p.id}" aria-pressed="${p.id===S.venta.sel}">
     <span class="n">${esc(p.nombre)}</span><span class="s">${num(s,1)} ${esc(plural(uv(p),s))}${p.precio_venta ? " · "+soles(p.precio_venta) : ""}</span></button>`; }).join("") || `<p class="muted">Ningún producto coincide.</p>`;
 }
@@ -657,7 +662,7 @@ function vistaPedidos(){
   const filtros = [["todos","Todos",hist.length],["completo","Recibido completo",cuenta("completo")],["incompleto","Llegó incompleto",cuenta("incompleto")],["cancelado","Cancelado",cuenta("cancelado")]];
   return `
   <div class="row between"><div><h1>Pedidos</h1><p class="sub">Sube la boleta del pedido. Cuando llegue, lo recibes en Recibir mercadería y queda en el historial.</p></div>
-    <button class="btn primary" data-act="subir-boleta">📷 Subir boleta</button></div>
+    <div class="row"><button class="btn" data-act="excel-pedidos">⬇ Descargar Excel</button><button class="btn primary" data-act="subir-boleta">📷 Subir boleta</button></div></div>
   <h2>Por llegar</h2>
   ${act.length ? act.map(tarjeta).join("") : `<div class="card empty"><p>No hay pedidos por llegar.</p></div>`}
   ${hist.length ? `<section class="card"><div><h2>Cumplimiento de proveedores</h2><p class="sub">Cuántos pedidos llegaron completos y qué parte de lo pedido llegó.</p></div>
@@ -1131,7 +1136,7 @@ function vistaPruebas(){
 function vistaCompras(){
   const porDia = {}; S.recepciones.forEach(r => (porDia[r.fecha] ??= []).push(r));
   const dias = Object.keys(porDia).sort().reverse();
-  return `<div class="row between"><div><h1>Compras registradas</h1><p class="sub">Todo lo que entró al inventario, por día. Puedes borrar una boleta o un día completo, por ejemplo tus pruebas.</p></div><button class="btn primary" data-go="recibir">+ Recibir mercadería</button></div>
+  return `<div class="row between"><div><h1>Compras registradas</h1><p class="sub">Todo lo que entró al inventario, por día. Puedes borrar una boleta o un día completo, por ejemplo tus pruebas.</p></div><div class="row"><button class="btn" data-act="excel-compras">⬇ Descargar Excel</button><button class="btn primary" data-go="recibir">+ Recibir mercadería</button></div></div>
   ${dias.length ? dias.map(f => { const rs = porDia[f], tot = rs.reduce((a,r) => a+toNum(r.total), 0);
     return `<section class="card">
       <div class="row between"><h2>${fechaLarga(f)}</h2><span class="row"><b class="num">${soles(tot)}</b><button class="btn sm danger" data-act="borrar-dia" data-f="${f}">Borrar este día</button></span></div>
@@ -1155,6 +1160,57 @@ async function limpiarHuerfanos(){
   for(const p of S.productos) if(!usados.has(p.id)){ try{ await borrar("productos", p.id); }catch{} }
 }
 async function confirmar(t, texto){ if(t.dataset.ok === "1") return true; t.dataset.ok = "1"; t.dataset.txt = t.textContent; t.textContent = texto; setTimeout(() => { if(t.isConnected){ t.dataset.ok = ""; t.textContent = t.dataset.txt; } }, 5000); return false; }
+
+// ----- Alertas -----
+function alertasDatos(){
+  const C = new Map(S.productos.map(p => [p.id, calc(p)]));
+  return {C,
+    agot: S.productos.filter(p => C.get(p.id).estado === "agotado"),
+    bajo: S.productos.filter(p => ["quiebre","bajo"].includes(C.get(p.id).estado)).sort((a,b) => C.get(a.id).stock - C.get(b.id).stock),
+    sinMin: S.productos.filter(p => !(toNum(p.stock_minimo) > 0) && C.get(p.id).stock > 0),
+    creds: S.recepciones.map(r => ({r, e:estadoCredito(r)})).filter(x => x.e && x.e.d <= 7).sort((a,b) => a.e.d - b.e.d),
+    atras: S.pedidos.filter(p => p.estado === "pendiente" && p.entrega && p.entrega < hoy())};
+}
+const totalAlertas = () => { const a = alertasDatos(); return a.agot.length + a.bajo.length + a.creds.length + a.atras.length; };
+function vistaAlertas(){
+  const {C, agot, bajo, sinMin, creds, atras} = alertasDatos();
+  const fila = p => { const c = C.get(p.id); return `<tr class="click" data-act="abrir" data-id="${p.id}"><td><span class="cod">${esc(p.codigo || "")}</span><b>${esc(p.nombre)}</b><br><span class="small muted">${esc([p.marca, p.linea].filter(Boolean).join(" · "))}</span></td><td class="r"><b>${num(c.stock,1)}</b> <span class="small muted">${esc(plural(uv(p), c.stock))}</span></td><td class="r">${toNum(p.stock_minimo) || "—"}</td><td>${pill(c.estado)}</td></tr>`; };
+  const tabla = ps => `<div class="tbl"><table><thead><tr><th>Producto</th><th class="r">Stock</th><th class="r">Mínimo</th><th>Estado</th></tr></thead><tbody>${ps.map(fila).join("")}</tbody></table></div>`;
+  return `<div class="row between"><div><h1>Alertas</h1><p class="sub">Lo que necesita tu atención hoy: stock que se acaba, pagos por vencer y pedidos atrasados.</p></div>
+    <div class="row"><button class="btn" data-act="excel-stock">⬇ Descargar Excel</button><button class="btn wa" data-act="wa-resumen">${waIcon()} Enviar por WhatsApp</button></div></div>
+  <div class="kpis">
+    <div class="kpi k4"><span class="kico">${ICON.pruebas}</span><span class="lab">Agotados</span><span class="val" style="${agot.length ? "color:var(--bad)" : ""}">${agot.length}</span><span class="note">productos en 0</span></div>
+    <div class="kpi k3"><span class="kico">${ICON.inventario}</span><span class="lab">Bajo o cerca del mínimo</span><span class="val">${bajo.length}</span><span class="note">hay que pedir</span></div>
+    <div class="kpi k2"><span class="kico">${ICON.creditos}</span><span class="lab">Créditos por vencer</span><span class="val">${creds.length}</span><span class="note">${soles(creds.reduce((a,x) => a+toNum(x.r.total), 0))} en 7 días</span></div>
+    <div class="kpi k1"><span class="kico">${ICON.pedidos}</span><span class="lab">Pedidos atrasados</span><span class="val">${atras.length}</span><span class="note">no llegaron a tiempo</span></div>
+  </div>
+  ${agot.length ? `<section class="card"><h2>🔴 Agotados</h2>${tabla(agot)}</section>` : ""}
+  ${bajo.length ? `<section class="card"><h2>🟠 Bajo o cerca del mínimo</h2>${tabla(bajo)}</section>` : ""}
+  ${creds.length ? `<section class="card"><h2>💳 Créditos por vencer</h2>${creds.map(({r,e}) => `<div class="alerta ${e.cls}"><span class="dot"></span><span><b>${esc(prov(r.proveedor_id)?.nombre || "Proveedor")}</b> · ${soles(r.total)} · ${e.txt}</span><button class="btn sm" data-go="creditos">Ver</button></div>`).join("")}</section>` : ""}
+  ${atras.length ? `<section class="card"><h2>🚚 Pedidos atrasados</h2>${atras.map(p => `<div class="alerta warn"><span class="dot"></span><span><b>${esc(prov(p.proveedor_id)?.nombre || "Proveedor")}</b> · debía llegar el ${fecha(p.entrega)}</span><button class="btn sm" data-go="recibir">Recibir</button></div>`).join("")}</section>` : ""}
+  ${!agot.length && !bajo.length && !creds.length && !atras.length ? `<div class="card empty"><h2>✓ Todo en orden</h2><p>No hay productos agotados ni bajo el mínimo, pagos por vencer ni pedidos atrasados.</p></div>` : ""}
+  ${sinMin.length ? `<section class="card"><div><h2>Ponles un stock mínimo</h2><p class="sub">Así la app te avisa antes de que se acaben. Escribe la cantidad mínima que quieres tener de cada producto.</p></div>
+    <div class="tbl"><table><thead><tr><th>Producto</th><th class="r">Stock ahora</th><th class="r" style="width:140px">Mínimo</th></tr></thead><tbody>
+      ${sinMin.map(p => `<tr><td><span class="cod">${esc(p.codigo || "")}</span>${esc(p.nombre)}</td><td class="r">${num(C.get(p.id).stock,1)} ${esc(plural(uv(p), C.get(p.id).stock))}</td><td class="r"><input data-min="${p.id}" inputmode="decimal" placeholder="ej. 5" style="text-align:right"></td></tr>`).join("")}
+    </tbody></table></div>
+    <div><button class="btn primary" data-act="guardar-minimos">Guardar mínimos</button></div></section>` : ""}`;
+}
+
+// ----- Descargas en Excel -----
+function cargarXLSX(){
+  if(window.XLSX) return Promise.resolve();
+  return new Promise((ok, mal) => { const s = document.createElement("script"); s.src = "https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"; s.onload = ok; s.onerror = mal; document.head.appendChild(s); });
+}
+async function descargarExcel(archivo, hojas){
+  await cargarXLSX();
+  const libro = XLSX.utils.book_new();
+  for(const [nombre, filas] of Object.entries(hojas)) XLSX.utils.book_append_sheet(libro, XLSX.utils.json_to_sheet(filas.length ? filas : [{"Sin datos":""}]), nombre.slice(0,31));
+  XLSX.writeFile(libro, `${archivo}-${hoy()}.xlsx`);
+}
+const filasStock = () => S.productos.map(p => { const c = calc(p); return {"Código":p.codigo || "", "Producto":p.nombre, "Marca":p.marca || "", "Línea":p.linea || "", "Stock":Math.round(c.stock*100)/100, "Unidad":uv(p), "Mínimo":toNum(p.stock_minimo) || "", "Estado":ESTADO[c.estado], "Costo unitario":c.costo !== null ? Math.round(c.costo*100)/100 : "", "Valor S/":Math.round(c.valor*100)/100}; });
+const filasCompras = () => S.recepciones.flatMap(r => S.ritems.filter(i => i.recepcion_id === r.id).map(i => { const p = prod(i.producto_id); return {"Fecha":r.fecha, "Proveedor":prov(r.proveedor_id)?.nombre || "", "Boleta":r.documento || "", "Pago":r.condicion, "Vence":r.vence || "", "Pagado":r.condicion === "credito" ? (r.pagado ? "Sí" : "No") : "", "Código":p?.codigo || "", "Producto":p?.nombre || "", "Marca":p?.marca || "", "Línea":p?.linea || "", "Cantidad":toNum(i.cantidad), "Unidad compra":i.unidad_compra, "Trae":toNum(i.factor), "Unidades":toNum(i.unidades), "Precio":toNum(i.precio_unit), "Importe":toNum(i.importe), "Bonificación":i.bonificacion ? "Sí" : "", "Cómo llegó":i.observacion || "Bien"}; }));
+const filasPedidos = () => S.pedidos.flatMap(pe => { const a = avancePedido(pe), estado = pe.estado === "recibido" ? "Recibido completo" : pe.estado === "pendiente" ? "Por llegar" : a.recepciones ? "Llegó incompleto" : "Cancelado";
+  return a.lineas.map(l => { const p = prod(l.producto_id); return {"Fecha pedido":pe.fecha, "Llega":pe.entrega || "", "Proveedor":prov(pe.proveedor_id)?.nombre || "", "Boleta":pe.documento || "", "Estado":estado, "Código":p?.codigo || "", "Producto":p?.nombre || "", "Pedido (unid.)":l.unidadesPedidas, "Llegó (unid.)":l.unidadesRecibidas, "Faltó (unid.)":l.pendiente, "Bonificación":l.bonificacion ? "Sí" : ""}; }); });
 
 // ----- Créditos -----
 function vistaCreditos(){
@@ -1185,6 +1241,8 @@ function vistaMas(){
   return `<div><h1>Más</h1></div>
   <section class="card">
     <button class="btn big" data-go="inventario">Inventario general</button>
+    <button class="btn big" data-go="compras">Historial de compras</button>
+    <button class="btn big" data-act="excel-todo">⬇ Descargar todo en Excel</button>
     <button class="btn big danger" data-go="pruebas">🗑 Borrar pruebas</button>
     <button class="btn big" data-go="creditos">Créditos con proveedores</button>
     <button class="btn big" data-go="proveedores">Proveedores</button>
@@ -1237,6 +1295,11 @@ document.addEventListener("click", async e => {
     else if(a === "subir-boleta"){ if(!S.pedido) S.pedido = nuevoPedidoVacio(); ir("pedidos"); setTimeout(() => $("#foto-pedido")?.click(), 80); }
     else if(a === "leer-pedido") leerBoletaPedido();
     else if(a === "filtro-hist"){ S.fh = t.dataset.v; render(); }
+    else if(a === "excel-stock"){ await descargarExcel("kardex-stock", {"Stock": filasStock()}); toast("Excel descargado."); }
+    else if(a === "excel-compras"){ await descargarExcel("kardex-compras", {"Compras": filasCompras()}); toast("Excel descargado."); }
+    else if(a === "excel-pedidos"){ await descargarExcel("kardex-pedidos", {"Pedidos": filasPedidos()}); toast("Excel descargado."); }
+    else if(a === "excel-todo"){ await descargarExcel("kardex-completo", {"Stock": filasStock(), "Compras": filasCompras(), "Pedidos": filasPedidos()}); toast("Excel descargado."); }
+    else if(a === "guardar-minimos"){ const ins = [...document.querySelectorAll("[data-min]")].filter(i => i.value.trim() !== ""); if(!ins.length){ toast("Escribe al menos un mínimo."); return; } t.disabled = true; for(const i of ins) await actualizar("productos", i.dataset.min, {stock_minimo: toNum(i.value)}); await refrescar(true); toast(`Mínimos guardados: ${ins.length}.`); }
     else if(a === "cond-pedido"){ S.pedido.condicion = t.dataset.v; render(); }
     else if(a === "zoom-pedido") abrirZoom(S.pedido.url);
     else if(a === "girar-pedido"){ S.pedido.img = await girarImagen(S.pedido.img); S.pedido.url = S.pedido.img.src; render(); }
