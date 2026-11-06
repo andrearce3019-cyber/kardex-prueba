@@ -310,6 +310,9 @@ tr.click:hover td{background:#F7FAFF}
 .login{border-radius:22px}
 .login h1{font-size:1.6rem}
 .zoom-bar .btn{background:#fff}
+.kpis{grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
+.kpi .val{font-size:clamp(1.35rem,2.4vw,1.85rem);white-space:nowrap}
+.kpi .lab{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .cod{display:inline-block;font-family:var(--f-mono);font-size:.72rem;font-weight:500;color:var(--accent);background:var(--accent-weak);border-radius:6px;padding:1px 6px;margin-right:6px;vertical-align:1px}
 </style>
 </head>
@@ -510,8 +513,7 @@ function vistaLogin(){
 function vistaInicio(){
   if(!S.productos.length) return `<div class="bienvenida"><h1>Resumen de inventario</h1><p class="sub">Tu inventario está vacío. Así se llena, en tres pasos:</p></div>
     <div class="pasos">
-      <div class="paso"><span class="n">1</span><span class="ico">${ICON.pedidos}</span><h3>Anota tu pedido</h3><p>Lo que le pediste al proveedor, con cantidad y precio, y el día en que llega.</p><button class="btn primary" data-act="nuevo-pedido">Hacer un pedido</button></div>
-      <div class="paso"><span class="n">2</span><span class="ico">${ICON.recibir}</span><h3>Recibe la mercadería</h3><p>Cuando llegue el reparto: <b>llegó completo</b> o <b>incompleto</b>. Sube la foto de la boleta y se llena sola.</p><button class="btn" data-go="recibir">Recibir mercadería</button></div>
+      <div class="paso"><span class="n">1</span><span class="ico">${ICON.pedidos}</span><h3>Sube la boleta del pedido</h3><p>Toma foto a la boleta y se llena sola: productos, cantidades, precios, bonificaciones, marca y línea. También puedes escribirlo.</p><button class="btn primary" data-act="subir-boleta">📷 Subir boleta</button></div>      <div class="paso"><span class="n">2</span><span class="ico">${ICON.recibir}</span><h3>Recibe la mercadería</h3><p>Cuando llegue el reparto, elige la boleta: <b>llegó completo</b> o <b>incompleto</b>. Si faltó algo, el pago se recalcula solo.</p><button class="btn" data-go="recibir">Recibir mercadería</button></div>
       <div class="paso"><span class="n">3</span><span class="ico">${ICON.inventario}</span><h3>Mira tu stock</h3><p>Aquí verás cuánto tienes de cada producto, cuánto vale y qué está por acabarse.</p></div>
     </div>`;
   const C = new Map(S.productos.map(p => [p.id, calc(p)]));
