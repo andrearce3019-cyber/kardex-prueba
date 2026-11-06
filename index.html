@@ -310,7 +310,8 @@ tr.click:hover td{background:#F7FAFF}
 .login{border-radius:22px}
 .login h1{font-size:1.6rem}
 .zoom-bar .btn{background:#fff}
-.kpis{grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
+.kpis{grid-template-columns:repeat(4,minmax(0,1fr))}
+@media (max-width:1100px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .kpi .val{font-size:clamp(1.35rem,2.4vw,1.85rem);white-space:nowrap}
 .kpi .lab{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .cod{display:inline-block;font-family:var(--f-mono);font-size:.72rem;font-weight:500;color:var(--accent);background:var(--accent-weak);border-radius:6px;padding:1px 6px;margin-right:6px;vertical-align:1px}
