@@ -591,6 +591,45 @@ function mensajeResumen(){
     Object.keys(lineas).sort().forEach(l => { L.push(`_${l}_`); lineas[l].sort((a,b) => a.nombre.localeCompare(b.nombre)).forEach(p => { const c = C.get(p.id); L.push(`• ${p.codigo ? p.codigo+" " : ""}${p.nombre}: ${num(c.stock,1)} ${plural(uv(p),c.stock)}`); }); }); }
   return L.join("\n");
 }
+// Envío por WhatsApp eligiendo qué mandar
+const SECCIONES_WA = [["agotado","🔴 Agotados"],["quiebre","🟠 Bajo el mínimo"],["bajo","🟡 Cerca del mínimo"],["mucho","🟢 Mucho stock (3 veces el mínimo o más)"],["creditos","💳 Créditos por vencer"],["pedidos","🚚 Pedidos atrasados"],["todo","📋 Inventario completo"]];
+function mensajeElegido(o){
+  const C = new Map(S.productos.map(p => [p.id, calc(p)]));
+  const ps = S.productos.filter(p => (!o.linea || (p.linea || "Sin línea") === o.linea) && (!o.marca || (p.marca || "Sin marca") === o.marca)).sort((a,b) => a.nombre.localeCompare(b.nombre));
+  const linea = p => { const c = C.get(p.id); return `• ${p.codigo ? p.codigo+" " : ""}${p.nombre}: ${num(c.stock,1)} ${plural(uv(p), c.stock)}${toNum(p.stock_minimo) ? ` (mín. ${toNum(p.stock_minimo)})` : ""}`; };
+  const filtro = [o.linea, o.marca].filter(Boolean).join(" · ");
+  const L = [`*Kardex · ${fechaLarga(hoy())}*${filtro ? `\n_${filtro}_` : ""}`];
+  const bloque = (titulo, lista) => { if(lista.length){ L.push("", `*${titulo}* (${lista.length})`); lista.forEach(p => L.push(linea(p))); } };
+  if(o.sec.has("agotado")) bloque("🔴 Agotados", ps.filter(p => C.get(p.id).estado === "agotado"));
+  if(o.sec.has("quiebre")) bloque("🟠 Bajo el mínimo", ps.filter(p => C.get(p.id).estado === "quiebre"));
+  if(o.sec.has("bajo")) bloque("🟡 Cerca del mínimo", ps.filter(p => C.get(p.id).estado === "bajo"));
+  if(o.sec.has("mucho")) bloque("🟢 Mucho stock", ps.filter(p => toNum(p.stock_minimo) > 0 && C.get(p.id).stock >= toNum(p.stock_minimo) * 3));
+  if(o.sec.has("creditos")){ const cr = S.recepciones.map(r => ({r, e:estadoCredito(r)})).filter(x => x.e && x.e.d <= 7).sort((a,b) => a.e.d - b.e.d);
+    if(cr.length){ L.push("", `*💳 Créditos por vencer* (${soles(cr.reduce((a,x) => a+toNum(x.r.total), 0))})`); cr.forEach(({r,e}) => L.push(`• ${prov(r.proveedor_id)?.nombre || "Proveedor"} ${soles(r.total)} – ${e.txt}`)); } }
+  if(o.sec.has("pedidos")){ const at = S.pedidos.filter(p => p.estado === "pendiente" && p.entrega && p.entrega < hoy());
+    if(at.length){ L.push("", `*🚚 Pedidos atrasados* (${at.length})`); at.forEach(p => L.push(`• ${prov(p.proveedor_id)?.nombre || "Proveedor"} – debía llegar el ${fecha(p.entrega)}`)); } }
+  if(o.sec.has("todo")){ const porL = {}; ps.forEach(p => (porL[p.linea || "Sin línea"] ??= []).push(p));
+    if(ps.length){ L.push("", "*📋 Inventario*"); Object.keys(porL).sort().forEach(l => { L.push(`_${l}_`); porL[l].forEach(p => L.push(linea(p))); }); } }
+  if(L.length === 1) L.push("", "Sin novedades en lo seleccionado ✅");
+  return L.join("\n");
+}
+function abrirEnvioWA(){
+  S.wa ??= {sec:new Set(["agotado","quiebre","creditos"]), linea:"", marca:""};
+  const o = S.wa, opts = (vals, sel, todos) => `<option value="">${todos}</option>` + [...new Set(vals)].sort().map(v => `<option ${v===sel?"selected":""}>${esc(v)}</option>`).join("");
+  const n = (S.config?.whatsapp || "").replace(/^51/, "51 ");
+  $("#overlayRoot").innerHTML = `<div class="overlay centro" data-act="cerrar-fondo"><div class="recibo" role="dialog" aria-label="Enviar por WhatsApp">
+    <div class="recibo-h"><span class="small">Enviar por WhatsApp${n ? " a +"+esc(n) : ""}</span><h2>¿Qué quieres enviar?</h2></div>
+    <div class="grid2" style="grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:6px">
+      ${SECCIONES_WA.map(([v,t]) => `<label class="row" style="gap:8px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;cursor:pointer"><input type="checkbox" data-wa-sec="${v}" ${o.sec.has(v) ? "checked" : ""} style="accent-color:var(--accent)"> <span>${t}</span></label>`).join("")}
+    </div>
+    <div class="grid2">
+      <label class="f">Solo la línea<select data-wa-f="linea">${opts(S.productos.map(p => p.linea || "Sin línea"), o.linea, "Todas las líneas")}</select></label>
+      <label class="f">Solo la marca<select data-wa-f="marca">${opts(S.productos.map(p => p.marca || "Sin marca"), o.marca, "Todas las marcas")}</select></label>
+    </div>
+    <label class="f">Vista previa (puedes editarla)<textarea id="wa-texto" rows="10" style="font-size:.85rem">${esc(mensajeElegido(o))}</textarea></label>
+    <div class="row between"><button class="btn" data-act="cerrar">Cancelar</button><button class="btn wa" data-act="wa-enviar">${waIcon()} Abrir WhatsApp</button></div>
+  </div></div>`;
+}
 function abrirWhatsApp(texto){
   const n = (S.config?.whatsapp || LS.get("kardex-wa") || "").replace(/\D/g,"");
   const url = `https://wa.me/${n}?text=${encodeURIComponent(texto)}`;
@@ -1266,7 +1305,8 @@ document.addEventListener("click", async e => {
     if(a === "cerrar-fondo"){ if(e.target === t) cerrarFicha(); }
     else if(a === "abrir"){ S.abierto = id; renderFicha(); }
     else if(a === "cerrar") cerrarFicha();
-    else if(a === "wa-resumen") abrirWhatsApp(mensajeResumen());
+    else if(a === "wa-resumen") abrirEnvioWA();
+    else if(a === "wa-enviar"){ abrirWhatsApp($("#wa-texto").value); cerrarFicha(); }
     else if(a === "wa-creditos"){ const L = ["*Créditos por pagar*"]; S.recepciones.filter(r => r.condicion === "credito" && !r.pagado).sort((x,y) => (x.vence||"").localeCompare(y.vence||"")).forEach(r => L.push(`• ${prov(r.proveedor_id)?.nombre || "Proveedor"} ${soles(r.total)} – ${estadoCredito(r).txt}`)); abrirWhatsApp(L.join("\n")); }
     else if(a === "guardar-wa"){ let n = $("#wa-num").value.replace(/D/g,""); if(n.length === 9) n = "51" + n; await api("config_tienda", {method:"POST", body:{id:1, whatsapp:n || null}, prefer:"resolution=merge-duplicates"}); S.config = {...S.config, whatsapp:n}; render(); toast(n ? "Número guardado: los avisos irán a +" + n : "Número borrado."); }
     else if(a === "salir"){ salir(); }
@@ -1393,6 +1433,8 @@ document.addEventListener("input", e => {
 });
 document.addEventListener("change", async e => {
   const t = e.target;
+  if(t.dataset.waSec){ t.checked ? S.wa.sec.add(t.dataset.waSec) : S.wa.sec.delete(t.dataset.waSec); $("#wa-texto").value = mensajeElegido(S.wa); return; }
+  if(t.dataset.waF){ S.wa[t.dataset.waF] = t.value; $("#wa-texto").value = mensajeElegido(S.wa); return; }
   if(["f-linea","f-marca","f-prov"].includes(t.id)){ S.f[t.id.slice(2)] = t.value; render(); return; }
   if(t.dataset.pl !== undefined && t.dataset.k === "nombre"){ render(); return; }
   if(t.dataset.pl !== undefined && t.dataset.k === "bonif"){ S.pedido.lineas[+t.dataset.pl].bonif = t.checked; render(); return; }
