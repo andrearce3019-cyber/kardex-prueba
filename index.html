@@ -241,7 +241,7 @@ nav.tabs button svg{width:18px;height:18px;flex:none;opacity:.9}
   <div class="wrap">
     <div class="top">
       <div class="brand">Kardex <span class="live" id="live"><i></i><span>conectando…</span></span></div>
-      <button class="btn primary sm" data-go="recibir" id="btnVenderTop">Recibir mercadería</button>
+      <button class="btn primary sm" data-act="subir-boleta" id="btnVenderTop">📷 Subir boleta</button>
     </div>
     <nav class="tabs" id="tabs"></nav>
   </div>
@@ -567,7 +567,8 @@ function vistaPedidos(){
 }
 function formPedido(){
   const d = S.pedido;
-  return `<div><h1>Nuevo pedido</h1><p class="sub">Anota lo que le pediste al proveedor. Cuando llegue el reparto, lo recibes desde Pedidos.</p></div>
+  return `<div><h1>Nuevo pedido</h1><p class="sub">Anota lo que le pediste al proveedor. Cuando llegue el reparto, lo recibes desde Recibir mercadería.</p></div>
+  <div class="banner info row between"><span>¿Ya te llegó la mercadería con su boleta? No necesitas hacer pedido: sube la foto y se registra directo.</span><button class="btn primary sm" data-act="subir-boleta">📷 Subir boleta</button></div>
   <section class="card">
     <div class="grid2">
       <label class="f">Proveedor<input data-pf="proveedor" list="dlProv" value="${esc(d.proveedor)}" placeholder="Ej. Grupo Vega"></label>
@@ -1058,6 +1059,7 @@ document.addEventListener("click", async e => {
     else if(a === "recibir-pedido"){ nuevaRecepcion(id); S.rec.modo = t.dataset.modo || "completo"; render(); }
     // Recibir
     else if(a === "recibir-directo") nuevaRecepcion(null);
+    else if(a === "subir-boleta"){ if(!S.rec) nuevaRecepcion(null); else ir("recibir"); setTimeout(() => $("#foto")?.click(), 80); }
     else if(a === "descartar-rec"){ S.rec = null; render(); }
     else if(a === "leer") leerBoleta();
     else if(a === "cond"){ S.rec.condicion = t.dataset.v; render(); }
