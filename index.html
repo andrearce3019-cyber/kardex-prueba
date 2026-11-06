@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Kardex de la Tienda</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Figtree:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
 /* Layout: cabecera con pestañas en computadora; en celular, barra de navegación fija abajo y una sola columna. */
 :root{
@@ -234,6 +234,83 @@ nav.tabs button svg{width:18px;height:18px;flex:none;opacity:.9}
 .fila-borrar{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--line)}
 .fila-borrar.dia{border-top:2px solid var(--line);margin-top:6px}
 .zona-peligro{border-color:var(--bad)}
+
+/* ===== Diseño 3: claro, luminoso y amable (un solo estilo, también con el celular en modo oscuro) ===== */
+:root,
+:root[data-theme="dark"]{
+  --bg:#F4F6FB; --surface:#FFFFFF; --ink:#1B2236; --muted:#6A7288; --line:#E6E9F2; --soft:#F2F4F9;
+  --accent:#12A37F; --accent-weak:#E3F6F0; --on-accent:#FFFFFF;
+  --ok:#139669; --ok-weak:#E2F5EC; --warn:#C27A05; --warn-weak:#FFF3DB; --bad:#E0464B; --bad-weak:#FDE9EA;
+  --bonus:#7C5CE0; --bonus-weak:#F0EBFF; --brand:#12A37F; --brand-ink:#FFFFFF;
+  --shadow:0 1px 2px rgba(27,34,54,.04),0 8px 24px rgba(27,34,54,.06);
+  --f-display:"Plus Jakarta Sans","Segoe UI",system-ui,sans-serif; --f-body:"Plus Jakarta Sans","Segoe UI",system-ui,sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#F4F6FB; --surface:#FFFFFF; --ink:#1B2236; --muted:#6A7288; --line:#E6E9F2; --soft:#F2F4F9;
+  --accent:#12A37F; --accent-weak:#E3F6F0; --on-accent:#FFFFFF;
+  --ok:#139669; --ok-weak:#E2F5EC; --warn:#C27A05; --warn-weak:#FFF3DB; --bad:#E0464B; --bad-weak:#FDE9EA;
+  --bonus:#7C5CE0; --bonus-weak:#F0EBFF; --brand:#12A37F; --brand-ink:#FFFFFF;
+  --shadow:0 1px 2px rgba(27,34,54,.04),0 8px 24px rgba(27,34,54,.06); color-scheme:light}}
+body{background:var(--bg);font-family:var(--f-body);letter-spacing:-.005em}
+h1,h2,h3,.kpi .val,.brand{font-family:var(--f-display);letter-spacing:-.02em}
+h1{font-size:1.9rem;font-weight:800}
+h2{font-weight:700}
+/* Cabecera / menú: blanco con la marca en verde */
+header,
+:root[data-theme="dark"] header{background:var(--surface)!important;color:var(--ink);border-bottom:1px solid var(--line);box-shadow:none}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) header{background:var(--surface)!important}}
+header .brand{color:var(--ink);font-weight:800}
+header .brand::before{content:"";width:30px;height:30px;border-radius:9px;background:linear-gradient(135deg,#12A37F,#5ED3B0);display:inline-block;box-shadow:0 4px 12px rgba(18,163,127,.35)}
+header .brand{flex-direction:row!important;align-items:center!important;gap:10px!important}
+header .live{color:var(--muted)}
+header .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;box-shadow:0 6px 16px rgba(18,163,127,.28)}
+nav.tabs button{color:var(--muted);font-weight:600}
+nav.tabs button:hover{background:var(--soft);color:var(--ink)}
+nav.tabs button[aria-current="true"]{background:var(--accent-weak);color:var(--accent)}
+nav.tabs button[data-go="pruebas"]{color:var(--bad)!important}
+@media (min-width:1000px){
+  header{border-bottom:0;border-right:1px solid var(--line)}
+  header .live{margin-left:auto}
+}
+nav.bottom{background:rgba(255,255,255,.96);backdrop-filter:blur(8px)}
+nav.bottom button[aria-current="true"]{color:var(--accent)}
+/* Tarjetas */
+.card{border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow)}
+.btn{border-radius:12px;font-weight:600}
+.btn.primary{box-shadow:0 6px 16px rgba(18,163,127,.25)}
+input,select,textarea{border-radius:10px;background:var(--surface);border-color:var(--line)}
+input:focus-visible,select:focus-visible{outline:3px solid var(--accent-weak);border-color:var(--accent)}
+/* KPIs pastel con ícono */
+.kpis{gap:14px}
+.kpi{border:0;border-top:0;border-radius:18px;padding:18px;gap:4px;box-shadow:var(--shadow);position:relative}
+.kpi .kico{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;margin-bottom:6px}
+.kpi .kico svg{width:22px;height:22px}
+.kpi .lab{text-transform:none;letter-spacing:0;font-size:.88rem;color:var(--muted)}
+.kpi .val{font-size:1.85rem;font-weight:800;color:var(--ink)}
+.kpi.k1{background:linear-gradient(160deg,#E4F7F1 0%,#FFFFFF 70%)} .kpi.k1 .kico{background:#C9EFE2;color:#0E8A6B}
+.kpi.k2{background:linear-gradient(160deg,#E6EEFF 0%,#FFFFFF 70%)} .kpi.k2 .kico{background:#D3E0FF;color:#3559D6}
+.kpi.k3{background:linear-gradient(160deg,#FFF1E2 0%,#FFFFFF 70%)} .kpi.k3 .kico{background:#FFE0BF;color:#C46A0A}
+.kpi.k4{background:linear-gradient(160deg,#F2ECFF 0%,#FFFFFF 70%)} .kpi.k4 .kico{background:#E2D8FF;color:#6B4BD8}
+button.kpi:hover{transform:translateY(-2px);transition:transform .15s}
+@media (prefers-reduced-motion:reduce){button.kpi:hover{transform:none}}
+/* Tablas */
+table th{background:transparent;color:var(--muted);text-transform:none;letter-spacing:0;font-size:.8rem;border-bottom:1px solid var(--line)}
+td{border-bottom-color:var(--soft)}
+tr.click:hover td{background:#F7FAFF}
+.pill{font-weight:700;padding:3px 10px}
+.alerta{background:var(--surface);border:1px solid var(--line)}
+.pedido-rec{background:var(--surface);border-radius:16px;box-shadow:var(--shadow)}
+.paso{border:0;border-radius:20px}
+.paso .ico{border-radius:14px}
+.paso:nth-child(2) .ico{background:#FFF1E2;color:#C46A0A}
+.paso:nth-child(3) .ico{background:#E6EEFF;color:#3559D6}
+.recibo-h{background:linear-gradient(135deg,#12A37F,#3CC59E);color:#fff}
+.btn.wa{box-shadow:0 6px 16px rgba(30,142,78,.25)}
+.login{border-radius:22px}
+.login h1{font-size:1.6rem}
+.zoom-bar .btn{background:#fff}
+.cod{display:inline-block;font-family:var(--f-mono);font-size:.72rem;font-weight:500;color:var(--accent);background:var(--accent-weak);border-radius:6px;padding:1px 6px;margin-right:6px;vertical-align:1px}
 </style>
 </head>
 <body>
@@ -462,10 +539,10 @@ function vistaInicio(){
   <div class="row between"><div><h1>Resumen de inventario</h1><p class="sub">${fechaLarga(hoy())} · el stock se actualiza solo con cada mercadería recibida.</p></div>
     <button class="btn wa" data-act="wa-resumen">${waIcon()} Enviar resumen por WhatsApp</button></div>
   <div class="kpis">
-    <button class="kpi" data-go="compras"><span class="lab">Comprado este mes</span><span class="val">${soles(compradoMes)}</span><span class="note">${recMes.length} recepción${recMes.length===1?"":"es"}</span></button>
-    <button class="kpi" data-go="inventario"><span class="lab">Valor del stock</span><span class="val">${soles(valor)}</span><span class="note">${S.productos.length} productos, a costo real</span></button>
-    <button class="kpi" data-go="pedidos"><span class="lab">Pedidos por llegar</span><span class="val">${pend.length}</span><span class="note">${atrasados.length ? `<span style="color:var(--warn)">${atrasados.length} atrasado${atrasados.length===1?"":"s"}</span>` : "al día"}</span></button>
-    <button class="kpi" data-go="creditos"><span class="lab">Créditos por pagar</span><span class="val" style="${credUrg.length?"color:var(--bad)":""}">${soles(creds.reduce((a,x) => a+toNum(x.r.total),0))}</span><span class="note">${credUrg.length ? `${credUrg.length} vence${credUrg.length===1?"":"n"} pronto` : `${creds.length} pendiente${creds.length===1?"":"s"}`}</span></button>
+    <button class="kpi k1" data-go="compras"><span class="kico">${ICON.compras}</span><span class="lab">Comprado este mes</span><span class="val">${soles(compradoMes)}</span><span class="note">${recMes.length} recepción${recMes.length===1?"":"es"}</span></button>
+    <button class="kpi k2" data-go="inventario"><span class="kico">${ICON.inventario}</span><span class="lab">Valor del stock</span><span class="val">${soles(valor)}</span><span class="note">${S.productos.length} productos, a costo real</span></button>
+    <button class="kpi k3" data-go="pedidos"><span class="kico">${ICON.pedidos}</span><span class="lab">Pedidos por llegar</span><span class="val">${pend.length}</span><span class="note">${atrasados.length ? `<span style="color:var(--warn)">${atrasados.length} atrasado${atrasados.length===1?"":"s"}</span>` : "al día"}</span></button>
+    <button class="kpi k4" data-go="creditos"><span class="kico">${ICON.creditos}</span><span class="lab">Créditos por pagar</span><span class="val" style="${credUrg.length?"color:var(--bad)":""}">${soles(creds.reduce((a,x) => a+toNum(x.r.total),0))}</span><span class="note">${credUrg.length ? `${credUrg.length} vence${credUrg.length===1?"":"n"} pronto` : `${creds.length} pendiente${creds.length===1?"":"s"}`}</span></button>
   </div>
   ${alertas.length ? `<section class="card"><h2>Atención</h2>${alertas.join("")}</section>` : ""}
   <section class="card">
@@ -479,7 +556,7 @@ function vistaInicio(){
     <div class="tbl"><table>
       <thead><tr><th>Producto</th><th class="r">Stock</th><th class="r">Costo c/u</th><th class="r">Valor</th><th>Estado</th></tr></thead>
       <tbody>${ps.map(p => { const c = C.get(p.id); return `<tr class="click" data-act="abrir" data-id="${p.id}">
-        <td><b>${esc(p.nombre)}</b><br><span class="small muted">${esc([p.marca,p.linea].filter(Boolean).join(" · "))}</span></td>
+        <td><span class="cod">${esc(p.codigo || "")}</span><b>${esc(p.nombre)}</b><br><span class="small muted">${esc([p.marca,p.linea].filter(Boolean).join(" · "))}</span></td>
         <td class="r"><b>${num(c.stock,1)}</b> <span class="small muted">${esc(plural(uv(p),c.stock))}</span></td>
         <td class="r">${c.costo !== null ? soles(c.costo) : "—"}</td>
         <td class="r">${soles(c.valor)}</td><td>${pill(c.estado)}</td></tr>`; }).join("") || `<tr><td colspan="5" class="muted">Ningún producto coincide.</td></tr>`}</tbody>
@@ -602,7 +679,7 @@ function formPedido(){
         <datalist id="dlProd">${S.productos.map(p => `<option value="${esc(p.nombre)}">`).join("")}</datalist>
         <div class="tbl"><table class="boleta"><thead><tr><th>Producto</th><th>Unidad</th><th class="r">Trae</th><th class="r">Cantidad</th><th class="r">Precio S/</th><th>Bonif.</th><th></th></tr></thead><tbody>
           ${d.lineas.map((l,i) => { const p = porNombre(l.nombre); const dup = !p && l.nombre ? parecidos(l.nombre) : [];
-            return `<tr class="${l.bonif ? "bon" : ""}"><td class="prod" data-l="Producto"><input data-pl="${i}" data-k="nombre" list="dlProd" value="${esc(l.nombre)}" placeholder="Escribe o elige"><div class="hint">${p ? `<span class="muted">Ya en inventario${p.marca || p.linea ? " · "+esc([p.marca, p.linea].filter(Boolean).join(" · ")) : ""}</span>` : l.nombre ? `<span style="color:var(--warn)">${dup.length ? "¿Es "+esc(dup[0].nombre)+"?" : "Producto nuevo"}</span>${l.marca || l.linea ? ` <span class="pill tag">${esc([l.marca, l.linea].filter(Boolean).join(" · "))}</span>` : ""}` : ""}${l.bonif ? ' <span class="pill bonus">Bonificación</span>' : ""}</div></td>
+            return `<tr class="${l.bonif ? "bon" : ""}"><td class="prod" data-l="Producto"><input data-pl="${i}" data-k="nombre" list="dlProd" value="${esc(l.nombre)}" placeholder="Escribe o elige"><div class="hint">${p ? `<span class="muted"><span class="cod">${esc(p.codigo || "")}</span>Reconocido: ya está en tu inventario${p.marca || p.linea ? " · "+esc([p.marca, p.linea].filter(Boolean).join(" · ")) : ""}</span>` : l.nombre ? `<span style="color:var(--warn)">${dup.length ? "¿Es "+esc(dup[0].nombre)+"?" : "Producto nuevo"}</span>${l.marca || l.linea ? ` <span class="pill tag">${esc([l.marca, l.linea].filter(Boolean).join(" · "))}</span>` : ""}` : ""}${l.bonif ? ' <span class="pill bonus">Bonificación</span>' : ""}</div></td>
             <td data-l="Unidad"><input data-pl="${i}" data-k="unidad" value="${esc(l.unidad)}" placeholder="CAJA"></td>
             <td class="n" data-l="Trae"><input data-pl="${i}" data-k="factor" inputmode="decimal" value="${esc(l.factor)}" title="Unidades de venta que trae cada una"></td>
             <td class="n" data-l="Cantidad"><input data-pl="${i}" data-k="cantidad" inputmode="decimal" value="${esc(l.cantidad)}"></td>
@@ -630,7 +707,7 @@ async function leerBoletaPedido(){
   d.leyendo = true; d.error = ""; render();
   try{
     const imagenes = [recorte(d.img,0,1), recorte(d.img,0,0.58), recorte(d.img,0.42,1)];
-    const productos = S.productos.map(p => ({nombre:p.nombre, marca:p.marca, presentaciones:p.presentaciones}));
+    const productos = S.productos.map(p => ({nombre:p.nombre, marca:p.marca, linea:p.linea, alias:(p.alias||[]).filter(a => !a.startsWith("#")).slice(0,8)}));
     const r = await fetch(`${SB_URL}/functions/v1/leer-boleta`, {method:"POST", headers:{apikey:SB_KEY, "Content-Type":"application/json", "x-clave-tienda":S.clave}, body: JSON.stringify({imagenes, productos})});
     const res = await r.json().catch(() => ({error:"conexion"}));
     if(!r.ok || res.error) throw res;
@@ -640,10 +717,10 @@ async function leerBoletaPedido(){
     d.dudas = Array.isArray(res.dudas) ? res.dudas.slice(0,6) : [];
     const items = res.items || [];
     if(items.length) d.lineas = items.map(it => {
-      const desc = String(it.descripcion || "").trim(), ex = porAlias(desc) || porAliasParecido(desc) || porNombre(it.nombre || "");
+      const desc = String(it.descripcion || "").trim(), ex = porCodigoProv(d.proveedor, it.codigo) || porAlias(desc) || porAliasParecido(desc) || porNombre(it.nombre || "");
       const uc = String(it.unidadCompra || "UN").toUpperCase().trim().replace(/^SAC$/,"SACO").replace(/^CJ$/,"CAJA").replace(/^UND$/,"UN");
       return {nombre: ex?.nombre || it.nombre || nombreBonito(desc), cantidad: toNum(it.cantidad) || 1, unidad: uc, factor: ex?.presentaciones?.[uc] || toNum(it.factor) || 1,
-        precio: toNum(it.precioUnit), bonif: !!it.bonificacion || toNum(it.importe) === 0, descripcion: desc, marca: it.marca || "", linea: it.linea || ""};
+        codigoProv: it.codigo || "", precio: toNum(it.precioUnit), bonif: !!it.bonificacion || toNum(it.importe) === 0, descripcion: desc, marca: it.marca || "", linea: it.linea || ""};
     });
     d.leida = true;
     toast(`Leí ${items.length} líneas${res.revisada ? " (revisadas dos veces)" : ""}. Revisa y guarda el pedido.`);
@@ -850,7 +927,7 @@ async function leerBoleta(){
   d.leyendo = true; d.error = ""; render();
   try{
     const imagenes = [recorte(d.img,0,1), recorte(d.img,0,0.58), recorte(d.img,0.42,1)];
-    const productos = S.productos.map(p => ({nombre:p.nombre, marca:p.marca, presentaciones:p.presentaciones}));
+    const productos = S.productos.map(p => ({nombre:p.nombre, marca:p.marca, linea:p.linea, alias:(p.alias||[]).filter(a => !a.startsWith("#")).slice(0,8)}));
     const r = await fetch(`${SB_URL}/functions/v1/leer-boleta`, {method:"POST", headers:{apikey:SB_KEY, "Content-Type":"application/json", "x-clave-tienda":S.clave}, body: JSON.stringify({imagenes, productos})});
     const res = await r.json().catch(() => ({error:"conexion"}));
     if(!r.ok || res.error) throw res;
@@ -900,6 +977,8 @@ function abrirConfirmacion(){
     <div class="row between"><button class="btn" data-act="cerrar">← Volver a editar</button><button class="btn primary" data-act="confirmar-rec">✓ Aceptar y guardar</button></div>
   </div></div>`;
 }
+const claveCod = (prov, cod) => "#" + norm(prov) + "#" + norm(cod);
+const porCodigoProv = (prov, cod) => prov && cod ? S.productos.find(p => (p.alias||[]).includes(claveCod(prov, cod))) : null;
 const porAliasParecido = desc => S.productos.find(p => [p.nombre, ...(p.alias||[])].some(a => parecido(a, desc) >= 0.8));
 // Pasa lo leído de la foto al cuadro: llena las filas del pedido que coinciden y agrega las demás
 function aplicarLectura(r){
@@ -916,10 +995,10 @@ function aplicarLectura(r){
   filas.forEach(f => f.llenada = false);
   for(const it of r.items){
     const desc = String(it.descripcion || "").trim();
-    const ex = porAlias(desc) || porAliasParecido(desc);
+    const ex = porCodigoProv(d.proveedor, it.codigo) || porAlias(desc) || porAliasParecido(desc);
     const nombre = ex?.nombre || porNombre(it.nombre || "")?.nombre || it.nombre || it.nuevo?.nombre || nombreBonito(desc);
     const uc = String(it.unidadCompra || "UN").toUpperCase().trim().replace(/^SAC$/,"SACO").replace(/^CJ$/,"CAJA").replace(/^UND$/,"UN");
-    const datos = {nombre, marca: it.marca || "", linea: it.linea || "", unidad:uc, factor: ex?.presentaciones?.[uc] || toNum(it.factor) || 1, cantidad: toNum(it.cantidad) || 1, precioUnit: toNum(it.precioUnit), importe: toNum(it.importe), bonificacion: !!it.bonificacion, descripcion: desc, importeManual: true};
+    const datos = {nombre, marca: it.marca || "", linea: it.linea || "", unidad:uc, factor: ex?.presentaciones?.[uc] || toNum(it.factor) || 1, cantidad: toNum(it.cantidad) || 1, precioUnit: toNum(it.precioUnit), importe: toNum(it.importe), bonificacion: !!it.bonificacion, descripcion: desc, codigoProv: it.codigo || "", importeManual: true};
     const delPedido = filas.find(f => !f.llenada && norm(f.nombre) === norm(nombre));
     if(delPedido) Object.assign(delPedido, datos, {llenada:true}); else filas.push({...filaVacia(), ...datos});
   }
@@ -943,7 +1022,7 @@ async function guardarRecepcion(btn){
     const items = [];
     for(const fs of grupos.values()){
       const pres = {}; fs.forEach(f => pres[String(f.unidad || "UN").toUpperCase()] = toNum(f.factor));
-      const alias = [...new Set(fs.map(f => norm(f.descripcion)).filter(Boolean))];
+      const alias = [...new Set([...fs.map(f => norm(f.descripcion)), ...fs.map(f => f.codigoProv ? claveCod(d.proveedor, f.codigoProv) : "")].filter(Boolean))];
       let p = porNombre(fs[0].nombre);
       if(!p) [p] = await insertar("productos", {nombre: fs[0].nombre.trim(), marca: fs[0].marca || null, linea: fs[0].linea || null, presentaciones: pres, alias});
       else await actualizar("productos", p.id, {presentaciones: {...(p.presentaciones || {}), ...pres}, alias: [...new Set([...(p.alias || []), ...alias])]});
@@ -966,7 +1045,7 @@ function vistaInventario(){
   const valor = [...C.values()].reduce((a,c) => a+c.valor, 0);
   return `<div><h1>Inventario general</h1><p class="sub">${S.productos.length} productos · ${soles(valor)} a costo real</p></div>
   <section class="card"><div class="tbl"><table><thead><tr><th>Producto</th><th>Línea</th><th class="r">Stock</th><th class="r">Costo c/u</th><th class="r">Valor</th><th>Estado</th></tr></thead><tbody>
-    ${S.productos.map(p => { const c = C.get(p.id); return `<tr class="click" data-act="abrir" data-id="${p.id}"><td><b>${esc(p.nombre)}</b><br><span class="small muted">${esc(p.marca || "")}</span></td><td>${esc(p.linea || "—")}</td><td class="r">${num(c.stock,1)} <span class="small muted">${esc(plural(uv(p),c.stock))}</span></td><td class="r">${c.costo !== null ? soles(c.costo) : "—"}</td><td class="r">${soles(c.valor)}</td><td>${pill(c.estado)}</td></tr>`; }).join("") || `<tr><td colspan="6" class="muted">Aún no hay productos.</td></tr>`}
+    ${S.productos.map(p => { const c = C.get(p.id); return `<tr class="click" data-act="abrir" data-id="${p.id}"><td><span class="cod">${esc(p.codigo || "")}</span><b>${esc(p.nombre)}</b><br><span class="small muted">${esc(p.marca || "")}</span></td><td>${esc(p.linea || "—")}</td><td class="r">${num(c.stock,1)} <span class="small muted">${esc(plural(uv(p),c.stock))}</span></td><td class="r">${c.costo !== null ? soles(c.costo) : "—"}</td><td class="r">${soles(c.valor)}</td><td>${pill(c.estado)}</td></tr>`; }).join("") || `<tr><td colspan="6" class="muted">Aún no hay productos.</td></tr>`}
   </tbody></table></div></section>`;
 }
 function renderFicha(){
@@ -974,7 +1053,7 @@ function renderFicha(){
   const c = calc(p);
   const hist = S.ritems.filter(i => i.producto_id === p.id).map(i => ({...i, r:S.recepciones.find(r => r.id === i.recepcion_id)})).filter(x => x.r).sort((a,b) => b.r.fecha.localeCompare(a.r.fecha));
   $("#overlayRoot").innerHTML = `<div class="overlay" data-act="cerrar-fondo"><div class="sheet" role="dialog" aria-label="${esc(p.nombre)}">
-    <div class="row between" style="align-items:flex-start"><div style="min-width:0"><h1 style="font-size:1.3rem">${esc(p.nombre)}</h1><p class="sub">${esc([p.marca,p.linea,p.categoria].filter(Boolean).join(" · ") || "Sin clasificar")} · se vende por ${esc(uv(p))}</p></div><button class="btn sm" data-act="cerrar">Cerrar</button></div>
+    <div class="row between" style="align-items:flex-start"><div style="min-width:0"><span class="cod">${esc(p.codigo || "")}</span><h1 style="font-size:1.3rem">${esc(p.nombre)}</h1><p class="sub">${esc([p.marca,p.linea,p.categoria].filter(Boolean).join(" · ") || "Sin clasificar")} · se vende por ${esc(uv(p))}</p></div><button class="btn sm" data-act="cerrar">Cerrar</button></div>
     <div class="row">${pill(c.estado)}${c.sugerido ? `<span class="pill tag">Pedir ${c.sugerido.cant} ${esc(c.sugerido.unidad.toLowerCase())}</span>` : ""}</div>
     <div class="stats">
       <div class="stat"><div class="lab">Stock ahora</div><div class="val">${num(c.stock,2)}</div><div class="note">${esc(plural(uv(p),c.stock))}</div></div>
@@ -1270,9 +1349,16 @@ async function guardarPedido(btn){
   const items = [];
   for(const l of lineas){
     let p = porNombre(l.nombre);
-    const uc = String(l.unidad||"UN").toUpperCase().trim(), alias = l.descripcion ? [norm(l.descripcion)] : [];
+    const uc = String(l.unidad||"UN").toUpperCase().trim(), alias = [l.descripcion ? norm(l.descripcion) : "", l.codigoProv ? claveCod(d.proveedor, l.codigoProv) : ""].filter(Boolean);
     if(!p){ [p] = await insertar("productos", {nombre:l.nombre.trim(), marca: l.marca || null, linea: l.linea || null, presentaciones:{[uc]: toNum(l.factor) || 1}, alias}); S.productos.push(p); }
-    else if(alias.length && !(p.alias||[]).includes(alias[0])) await actualizar("productos", p.id, {alias:[...(p.alias||[]), alias[0]], presentaciones:{...(p.presentaciones||{}), [uc]: toNum(l.factor) || 1}});
+    else {
+      // Recordar cómo lo escribe este proveedor (descripción y su código) para reconocerlo la próxima vez
+      const nuevos = alias.filter(a => !(p.alias||[]).includes(a)), cambios = {};
+      if(nuevos.length){ cambios.alias = [...(p.alias||[]), ...nuevos]; cambios.presentaciones = {...(p.presentaciones||{}), [uc]: toNum(l.factor) || 1}; }
+      if(!p.marca && l.marca) cambios.marca = l.marca;
+      if(!p.linea && l.linea) cambios.linea = l.linea;
+      if(Object.keys(cambios).length){ await actualizar("productos", p.id, cambios); Object.assign(p, cambios); }
+    }
     items.push({producto_id:p.id, cantidad:toNum(l.cantidad), unidad_compra:uc, factor:toNum(l.factor) || 1, precio_unit: toNum(l.precio) || null, bonificacion: !!l.bonif, descripcion: l.descripcion || null});
   }
   const [pe] = await insertar("pedidos", {proveedor_id:pr.id, entrega:d.entrega || null, documento: (d.documento || "").trim() || null, total: toNum(d.total) || items.reduce((a,i) => a + (i.bonificacion ? 0 : i.cantidad*toNum(i.precio_unit)), 0), condicion: d.condicion === "credito" ? "credito" : "contado", dias_credito: d.condicion === "credito" ? toNum(d.dias) || 15 : null});
