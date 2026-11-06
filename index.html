@@ -380,7 +380,8 @@ function avancePedido(pe){
   const recs = new Set(S.recepciones.filter(r => r.pedido_id === pe.id).map(r => r.id));
   const recibido = {}; S.ritems.filter(i => recs.has(i.recepcion_id)).forEach(i => recibido[i.producto_id] = (recibido[i.producto_id]||0) + toNum(i.unidades));
   let pedidas = 0, llegaron = 0;
-  const lineas = items.map(i => { const u = toNum(i.cantidad)*toNum(i.factor); const r = Math.min(u, recibido[i.producto_id]||0); pedidas += u; llegaron += r; return {...i, unidadesPedidas:u, unidadesRecibidas:recibido[i.producto_id]||0, pendiente:Math.max(0,u-(recibido[i.producto_id]||0))}; });
+  // Lo recibido de cada producto se reparte entre sus líneas (ej. la pagada y la de regalo)
+  const lineas = items.map(i => { const u = toNum(i.cantidad)*toNum(i.factor); const r = Math.min(u, recibido[i.producto_id]||0); recibido[i.producto_id] = (recibido[i.producto_id]||0) - r; pedidas += u; llegaron += r; return {...i, unidadesPedidas:u, unidadesRecibidas:r, pendiente:Math.max(0,u-r)}; });
   return {lineas, pct: pedidas ? llegaron/pedidas : 0, recepciones: recs.size};
 }
 
@@ -567,27 +568,90 @@ function vistaPedidos(){
 }
 function formPedido(){
   const d = S.pedido;
-  return `<div><h1>Nuevo pedido</h1><p class="sub">Anota lo que le pediste al proveedor. Cuando llegue el reparto, lo recibes desde Recibir mercadería.</p></div>
-  <div class="banner info row between"><span>¿Ya te llegó la mercadería con su boleta? No necesitas hacer pedido: sube la foto y se registra directo.</span><button class="btn primary sm" data-act="subir-boleta">📷 Subir boleta</button></div>
-  <section class="card">
-    <div class="grid2">
-      <label class="f">Proveedor<input data-pf="proveedor" list="dlProv" value="${esc(d.proveedor)}" placeholder="Ej. Grupo Vega"></label>
-      <label class="f">Llega el<input type="date" data-pf="entrega" value="${esc(d.entrega)}"></label>
+  const suma = d.lineas.reduce((a,l) => a + (l.bonif ? 0 : toNum(l.cantidad)*toNum(l.precio)), 0);
+  return `<div class="row between"><div><h1>Nuevo pedido</h1><p class="sub">Sube la foto de la boleta y se llena sola, o escribe los productos. Cuando llegue el reparto, lo recibes en Recibir mercadería.</p></div><button class="btn" data-act="cancelar-pedido-form">Cancelar</button></div>
+  <div class="recibir-grid">
+    <aside class="card foto-lado">
+      <h2>📷 Foto de la boleta</h2>
+      ${d.url ? `<img src="${d.url}" alt="Foto de la boleta" data-act="zoom-pedido">
+        <div class="row"><button class="btn sm" data-act="zoom-pedido">Ampliar</button><button class="btn sm" data-act="girar-pedido">Girar ↻</button><label class="btn sm" for="foto-pedido">Cambiar foto</label></div>`
+      : `<p class="small muted" style="margin:0">Toma la foto completa, derecha y con buena luz.</p><label class="btn primary big" for="foto-pedido">Tomar o subir foto</label>`}
+      <input id="foto-pedido" type="file" accept="image/*" hidden>
+      ${d.url ? (d.leyendo ? `<button class="btn primary" disabled><span class="spin"></span> Leyendo la boleta… (aprox. 1 minuto)</button>`
+        : `<button class="btn primary" data-act="leer-pedido">${d.leida ? "Leer otra vez" : "✨ Leer boleta y llenar el pedido"}</button>`) : ""}
+      ${d.dudas?.length ? `<div class="banner">Revisa: ${d.dudas.map(esc).join(" · ")}</div>` : ""}
+      ${d.error ? `<div class="banner bad">${d.error}</div>` : ""}
+    </aside>
+    <div style="display:grid;gap:16px;min-width:0">
+      <section class="card">
+        <h2>Datos del pedido</h2>
+        <div class="grid2">
+          <label class="f">Proveedor<input data-pf="proveedor" list="dlProv" value="${esc(d.proveedor)}" placeholder="Ej. Grupo Vega"></label>
+          <label class="f">N° de boleta<input data-pf="documento" value="${esc(d.documento || "")}" placeholder="opcional"></label>
+          <label class="f">Llega el<input type="date" data-pf="entrega" value="${esc(d.entrega)}"></label>
+          <label class="f">Total de la boleta S/<input data-pf="total" inputmode="decimal" value="${d.total || ""}" placeholder="opcional"></label>
+        </div>
+        <div class="row">
+          <span class="seg" role="group" aria-label="Forma de pago"><button data-act="cond-pedido" data-v="contado" aria-pressed="${d.condicion!=="credito"}">Contado</button><button data-act="cond-pedido" data-v="credito" aria-pressed="${d.condicion==="credito"}">Crédito</button></span>
+          ${d.condicion === "credito" ? `<label class="f" style="width:120px">Días<input data-pf="dias" inputmode="numeric" value="${esc(d.dias || 15)}"></label>` : ""}
+        </div>
+        <datalist id="dlProv">${S.proveedores.map(p => `<option value="${esc(p.nombre)}">`).join("")}</datalist>
+      </section>
+      <section class="card">
+        <h2>Productos</h2>
+        <datalist id="dlProd">${S.productos.map(p => `<option value="${esc(p.nombre)}">`).join("")}</datalist>
+        <div class="tbl"><table class="boleta"><thead><tr><th>Producto</th><th>Unidad</th><th class="r">Trae</th><th class="r">Cantidad</th><th class="r">Precio S/</th><th>Bonif.</th><th></th></tr></thead><tbody>
+          ${d.lineas.map((l,i) => { const p = porNombre(l.nombre); const dup = !p && l.nombre ? parecidos(l.nombre) : [];
+            return `<tr class="${l.bonif ? "bon" : ""}"><td class="prod" data-l="Producto"><input data-pl="${i}" data-k="nombre" list="dlProd" value="${esc(l.nombre)}" placeholder="Escribe o elige"><div class="hint">${p ? `<span class="muted">Ya en inventario</span>` : l.nombre ? `<span style="color:var(--warn)">${dup.length ? "¿Es "+esc(dup[0].nombre)+"?" : "Producto nuevo"}</span>` : ""}</div></td>
+            <td data-l="Unidad"><input data-pl="${i}" data-k="unidad" value="${esc(l.unidad)}" placeholder="CAJA"></td>
+            <td class="n" data-l="Trae"><input data-pl="${i}" data-k="factor" inputmode="decimal" value="${esc(l.factor)}" title="Unidades de venta que trae cada una"></td>
+            <td class="n" data-l="Cantidad"><input data-pl="${i}" data-k="cantidad" inputmode="decimal" value="${esc(l.cantidad)}"></td>
+            <td class="n" data-l="Precio S/"><input data-pl="${i}" data-k="precio" inputmode="decimal" value="${esc(l.precio ?? "")}" placeholder="0.00"></td>
+            <td class="c" data-l="Bonif."><input type="checkbox" data-pl="${i}" data-k="bonif" ${l.bonif ? "checked" : ""} aria-label="Bonificación"></td>
+            <td class="c"><button class="btn sm" data-act="del-pl" data-i="${i}" aria-label="Quitar">✕</button></td></tr>`; }).join("")}
+        </tbody></table></div>
+        <div class="row"><button class="btn" data-act="add-pl">+ Agregar producto</button></div>
+        <div class="cuadre ${!toNum(d.total) || Math.abs(suma - toNum(d.total)) < 0.01 ? "ok" : "bad"}" id="cuadre-pedido">${cuadrePedidoTxt()}</div>
+        <button class="btn primary big" data-act="guardar-pedido">Guardar pedido</button>
+      </section>
     </div>
-    <datalist id="dlProv">${S.proveedores.map(p => `<option value="${esc(p.nombre)}">`).join("")}</datalist>
-    <datalist id="dlProd">${S.productos.map(p => `<option value="${esc(p.nombre)}">`).join("")}</datalist>
-    <div class="tbl"><table><thead><tr><th>Producto</th><th>Cantidad</th><th>Unidad</th><th>Trae</th><th>Precio S/</th><th></th></tr></thead><tbody>
-      ${d.lineas.map((l,i) => { const p = porNombre(l.nombre); const dup = !p && l.nombre ? parecidos(l.nombre) : [];
-        return `<tr><td style="min-width:200px"><input data-pl="${i}" data-k="nombre" list="dlProd" value="${esc(l.nombre)}" placeholder="Escribe o elige">${p ? `<span class="small muted">En inventario</span>` : l.nombre ? `<span class="small" style="color:var(--warn)">${dup.length ? "¿Es "+esc(dup[0].nombre)+"?" : "Producto nuevo"}</span>` : ""}</td>
-        <td style="min-width:80px"><input data-pl="${i}" data-k="cantidad" inputmode="decimal" value="${esc(l.cantidad)}"></td>
-        <td style="min-width:90px"><input data-pl="${i}" data-k="unidad" value="${esc(l.unidad)}" placeholder="CAJA"></td>
-        <td style="min-width:70px"><input data-pl="${i}" data-k="factor" inputmode="decimal" value="${esc(l.factor)}" title="Unidades de venta que trae cada una"></td>
-        <td style="min-width:90px"><input data-pl="${i}" data-k="precio" inputmode="decimal" value="${esc(l.precio ?? "")}" placeholder="opcional"></td>
-        <td><button class="btn sm" data-act="del-pl" data-i="${i}" aria-label="Quitar">✕</button></td></tr>`; }).join("")}
-    </tbody></table></div>
-    <div class="row"><button class="btn" data-act="add-pl">+ Agregar producto</button></div>
-    <div class="row between"><button class="btn" data-act="cancelar-pedido-form">Cancelar</button><button class="btn primary" data-act="guardar-pedido">Guardar pedido</button></div>
-  </section>`;
+  </div>`;
+}
+function cuadrePedidoTxt(){
+  const d = S.pedido, suma = d.lineas.reduce((a,l) => a + (l.bonif ? 0 : toNum(l.cantidad)*toNum(l.precio)), 0), total = toNum(d.total);
+  const bon = d.lineas.filter(l => l.bonif && l.nombre.trim()).length, extra = bon ? ` · ${bon} bonificación${bon===1?"":"es"}` : "";
+  if(!total) return `Total del pedido: ${soles(suma)}${extra}`;
+  return Math.abs(suma - total) < 0.01 ? `✓ Cuadra con la boleta: ${soles(suma)}${extra}` : `Los productos suman ${soles(suma)} y la boleta dice ${soles(total)}. Revisa cantidades y precios.`;
+}
+const lineaPedido = () => ({nombre:"", cantidad:1, unidad:"CAJA", factor:1, precio:"", bonif:false});
+const nuevoPedidoVacio = () => ({proveedor:"", documento:"", total:"", condicion:"contado", dias:15, entrega: sumarDias(hoy(),1), lineas:[lineaPedido()], url:null, img:null, leyendo:false, leida:false, error:"", dudas:[]});
+async function leerBoletaPedido(){
+  const d = S.pedido; if(!d?.img) return;
+  d.leyendo = true; d.error = ""; render();
+  try{
+    const imagenes = [recorte(d.img,0,1), recorte(d.img,0,0.58), recorte(d.img,0.42,1)];
+    const productos = S.productos.map(p => ({nombre:p.nombre, marca:p.marca, presentaciones:p.presentaciones}));
+    const r = await fetch(`${SB_URL}/functions/v1/leer-boleta`, {method:"POST", headers:{apikey:SB_KEY, "Content-Type":"application/json", "x-clave-tienda":S.clave}, body: JSON.stringify({imagenes, productos})});
+    const res = await r.json().catch(() => ({error:"conexion"}));
+    if(!r.ok || res.error) throw res;
+    if(res.proveedor) d.proveedor = (S.proveedores.find(p => parecido(p.nombre, res.proveedor) >= 0.6)?.nombre) || res.proveedor;
+    d.documento = res.documento || d.documento; d.total = toNum(res.total) || d.total; d.ruc = res.ruc || "";
+    if(res.condicion === "credito"){ d.condicion = "credito"; if(toNum(res.dias_credito) > 0) d.dias = toNum(res.dias_credito); } else if(res.condicion === "contado") d.condicion = "contado";
+    d.dudas = Array.isArray(res.dudas) ? res.dudas.slice(0,6) : [];
+    const items = res.items || [];
+    if(items.length) d.lineas = items.map(it => {
+      const desc = String(it.descripcion || "").trim(), ex = porAlias(desc) || porAliasParecido(desc) || porNombre(it.nombre || "");
+      const uc = String(it.unidadCompra || "UN").toUpperCase().trim().replace(/^SAC$/,"SACO").replace(/^CJ$/,"CAJA").replace(/^UND$/,"UN");
+      return {nombre: ex?.nombre || it.nombre || nombreBonito(desc), cantidad: toNum(it.cantidad) || 1, unidad: uc, factor: ex?.presentaciones?.[uc] || toNum(it.factor) || 1,
+        precio: toNum(it.precioUnit), bonif: !!it.bonificacion || toNum(it.importe) === 0, descripcion: desc, marca: it.marca || "", linea: it.linea || ""};
+    });
+    d.leida = true;
+    toast(`Leí ${items.length} líneas${res.revisada ? " (revisadas dos veces)" : ""}. Revisa y guarda el pedido.`);
+  }catch(e){
+    d.error = ({falta_api_key:"La lectura no está activada: falta la clave gratuita de Gemini en Supabase.", api_key_invalida:"La clave de Gemini no es válida.",
+      limite:"Se alcanzó el límite gratuito por ahora. Espera un minuto e intenta otra vez.", no_json:"No pude entender la boleta. Toma la foto más de cerca, completa y con buena luz.", clave:"La clave de la tienda no es válida. Vuelve a entrar."})[e?.error]
+      || "No se pudo leer la boleta por un problema de conexión. Intenta de nuevo.";
+  }finally{ d.leyendo = false; render(); }
 }
 
 // ----- Recibir -----
@@ -595,20 +659,20 @@ const UNIDADES_COMPRA = ["UN","CAJA","PAQ","TIRA","POTE","SACO","BOLSA","DOC","P
 function vistaRecibir(){
   if(!S.rec){
     const pend = S.pedidos.filter(p => ["pendiente","parcial"].includes(p.estado));
-    return `<div><h1>Recibir mercadería</h1><p class="sub">Registra lo que llegó. Si viene de un pedido, elígelo para marcar lo que faltó.</p></div>
+    return `<div><h1>Recibir mercadería</h1><p class="sub">Elige la boleta o pedido que llegó y marca si vino completo. Si faltó algo, el pago se recalcula solo.</p></div>
     ${pend.length ? `<section class="card"><div><h2>Pedidos por recibir</h2><p class="sub">Cuando llegue el reparto, elige cómo llegó.</p></div>${pend.map(pe => { const a = avancePedido(pe), monto = a.lineas.reduce((s,l) => s + l.pendiente/toNum(l.factor||1)*toNum(l.precio_unit), 0);
       return `<div class="pedido-rec">
         <div><b>${esc(prov(pe.proveedor_id)?.nombre || "Proveedor")}</b> <span class="pill ${pe.estado==="parcial"?"bad":"warn"}">${pe.estado==="parcial" ? "Falta una parte" : "Por llegar"}</span><br>
-          <span class="small muted">Pedido ${fecha(pe.fecha)} · llega ${fecha(pe.entrega)} · ${a.lineas.filter(l => l.pendiente > 0).length} productos${monto ? " · "+soles(monto) : ""}</span></div>
+          <span class="small muted">${pe.documento ? "Boleta "+esc(pe.documento)+" · " : ""}pedido ${fecha(pe.fecha)} · llega ${fecha(pe.entrega)} · ${a.lineas.filter(l => l.pendiente > 0).length} productos${monto ? " · "+soles(monto) : ""}</span></div>
         <div class="row"><button class="btn primary" data-act="recibir-pedido" data-id="${pe.id}" data-modo="completo">✓ Llegó completo</button><button class="btn" data-act="recibir-pedido" data-id="${pe.id}" data-modo="incompleto">Llegó incompleto</button></div>
       </div>`; }).join("")}</section>` : `<section class="card"><p class="muted" style="margin:0">No tienes pedidos por recibir. <button class="linkbtn" data-act="nuevo-pedido">Hacer un pedido</button></p></section>`}
-    <section class="card"><h2>${pend.length ? "O sin pedido" : "Sin pedido"}</h2><p class="sub" style="margin:0">Compra directa o reparto que no anotaste como pedido.</p><button class="btn primary" data-act="recibir-directo">Recibir sin pedido</button></section>
+    <p class="small muted" style="margin:0">¿Llegó algo que no anotaste como pedido? <button class="linkbtn" data-act="recibir-directo">Regístralo aquí</button></p>
     ${S.recepciones.length ? `<button class="btn" data-go="compras">Ver, revisar o borrar compras registradas (${S.recepciones.length})</button>` : ""}`;
   }
   const d = S.rec, pe = S.pedidos.find(p => p.id === d.pedidoId);
   return `<div class="row between"><div><h1>Recibir mercadería</h1><p class="sub">${pe ? `Pedido a <b>${esc(prov(pe.proveedor_id)?.nombre || "")}</b> del ${fecha(pe.fecha)}` : "Sin pedido"}</p></div><button class="btn" data-act="descartar-rec">Descartar</button></div>
-  <div class="recibir-grid">
-    <aside class="card foto-lado">
+  <div class="${pe ? "" : "recibir-grid"}">
+    ${pe ? "" : `<aside class="card foto-lado">
       <h2>Foto de la boleta</h2>
       ${d.url ? `<img src="${d.url}" alt="Foto de la boleta" data-act="zoom">
         <div class="row"><button class="btn sm" data-act="zoom">Ampliar</button><button class="btn sm" data-act="girar">Girar ↻</button><label class="btn sm" for="foto">Cambiar foto</label></div>`
@@ -618,15 +682,15 @@ function vistaRecibir(){
         : `<button class="btn primary" data-act="leer">${d.leida ? "Leer otra vez" : "✨ Leer boleta y llenar el cuadro"}</button><p class="small muted" style="margin:0">Se lee con inteligencia artificial gratis. Revisa el cuadro antes de guardar.</p>`) : ""}
       ${d.dudas?.length ? `<div class="banner">Revisa: ${d.dudas.map(esc).join(" · ")}</div>` : ""}
       ${d.error ? `<div class="banner bad">${d.error}</div>` : ""}
-    </aside>
+    </aside>`}
     <div style="display:grid;gap:16px;min-width:0">
       <section class="card" id="paso2">
-        <h2>Datos de la boleta</h2>
+        <h2>${pe ? "Pago" : "Datos de la boleta"}</h2>
         <div class="grid2">
-          <label class="f">Proveedor<input data-h="proveedor" list="dlProv" value="${esc(d.proveedor)}" placeholder="Ej. Grupo Vega"></label>
-          <label class="f">Fecha<input type="date" data-h="fecha" value="${esc(d.fecha)}"></label>
-          <label class="f">N° de boleta<input data-h="documento" value="${esc(d.documento)}" placeholder="opcional"></label>
-          <label class="f">Total a pagar S/<input data-h="total" inputmode="decimal" value="${d.total || ""}"></label>
+          ${pe ? "" : `<label class="f">Proveedor<input data-h="proveedor" list="dlProv" value="${esc(d.proveedor)}" placeholder="Ej. Grupo Vega"></label>`}
+          <label class="f">Fecha en que llegó<input type="date" data-h="fecha" value="${esc(d.fecha)}"></label>
+          ${pe ? "" : `<label class="f">N° de boleta<input data-h="documento" value="${esc(d.documento)}" placeholder="opcional"></label>
+          <label class="f">Total a pagar S/<input data-h="total" inputmode="decimal" value="${d.total || ""}"></label>`}
         </div>
         <datalist id="dlProv">${S.proveedores.map(p => `<option value="${esc(p.nombre)}">`).join("")}</datalist>
         <div class="row">
@@ -691,6 +755,11 @@ function cuadreHtml(){
   const d = S.rec; if(!d) return "";
   const suma = d.filas.reduce((a,f) => a + (f.bonificacion ? 0 : toNum(f.importe)), 0);
   const bon = d.filas.filter(f => f.bonificacion && f.nombre.trim()).length;
+  if(d.pedidoId){
+    const original = d.filas.filter(f => f.desdePedido).reduce((a,f) => a + (f.bonificacion ? 0 : (f.noLlego ? toNum(f.guardado?.importe) : toNum(f.importe))), 0);
+    const menos = Math.round((original - suma)*100)/100;
+    return `<div class="cuadre ${menos > 0 ? "bad" : "ok"}" style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:baseline"><span>${menos > 0 ? `No llegó todo: pagas ${soles(menos)} menos que el pedido` : "✓ Llegó todo lo pedido"}</span><b style="font-size:1.25rem">A pagar: ${soles(suma)}</b></div>`;
+  }
   const total = toNum(d.total), extra = bon ? ` · ${bon} bonificación${bon===1?"":"es"}` : "";
   if(!total) return `<div class="cuadre bad">Los importes suman ${soles(suma)}${extra}. Escribe el total de la boleta para comprobarlo.</div>`;
   const dif = Math.round((suma-total)*100)/100;
@@ -701,20 +770,21 @@ const filaVacia = () => ({nombre:"", unidad:"UN", factor:1, cantidad:"", precioU
 function nuevaRecepcion(pedidoId){
   const pe = S.pedidos.find(p => p.id === pedidoId);
   const pr = pe ? prov(pe.proveedor_id) : null;
-  const d = {pedidoId: pe?.id || null, proveedor: pr?.nombre || "", fecha: hoy(), documento:"", total:0,
-    condicion: pr?.dias_credito ? "credito" : "contado", dias: pr?.dias_credito || 15, url:null, img:null, leyendo:false, leida:false, error:"", dudas:[], filas:[]};
+  const cond = pe?.condicion || (pr?.dias_credito ? "credito" : "contado");
+  const d = {pedidoId: pe?.id || null, proveedor: pr?.nombre || "", fecha: hoy(), documento: pe?.documento || "", total:0,
+    condicion: cond, dias: pe?.dias_credito || pr?.dias_credito || 15, url:null, img:null, leyendo:false, leida:false, error:"", dudas:[], filas:[]};
   if(pe){
     avancePedido(pe).lineas.filter(l => l.pendiente > 0).forEach(l => {
       const cant = Math.round(l.pendiente / toNum(l.factor || 1) * 100)/100, pu = toNum(l.precio_unit);
-      d.filas.push({...filaVacia(), nombre: prod(l.producto_id)?.nombre || "", unidad: l.unidad_compra, factor: toNum(l.factor), cantidad: cant, precioUnit: pu || "", importe: pu ? Math.round(cant*pu*100)/100 : "", pedidoUnidades: l.pendiente, desdePedido: true});
+      d.filas.push({...filaVacia(), nombre: prod(l.producto_id)?.nombre || "", unidad: l.unidad_compra, factor: toNum(l.factor), cantidad: cant, precioUnit: pu || "", importe: l.bonificacion ? 0 : (pu ? Math.round(cant*pu*100)/100 : ""), bonificacion: !!l.bonificacion, descripcion: l.descripcion || "", pedidoUnidades: l.pendiente, desdePedido: true});
     });
   }
   if(!d.filas.length) d.filas.push(filaVacia(), filaVacia(), filaVacia());
   S.rec = d; ir("recibir");
 }
-function abrirZoom(){
+function abrirZoom(url = S.rec?.url){
   S.zoomW = S.zoomW || 100;
-  $("#overlayRoot").innerHTML = `<div class="zoom" data-act="cerrar-zoom"><img src="${S.rec.url}" alt="Boleta ampliada" id="zoomImg" style="width:${S.zoomW}%"></div>
+  $("#overlayRoot").innerHTML = `<div class="zoom" data-act="cerrar-zoom"><img src="${url}" alt="Boleta ampliada" id="zoomImg" style="width:${S.zoomW}%"></div>
     <div class="zoom-bar"><button class="btn" data-act="zoom-mas" aria-label="Acercar">＋</button><button class="btn" data-act="zoom-menos" aria-label="Alejar">−</button><button class="btn primary" data-act="cerrar-zoom">Cerrar</button></div>`;
 }
 
@@ -812,8 +882,8 @@ function abrirConfirmacion(){
   if(!d.proveedor.trim()){ toast("Escribe el proveedor."); return; }
   if(!filas.length){ toast("Agrega al menos un producto."); return; }
   const grupos = new Map(); filas.forEach(f => { const k = norm(f.nombre); if(!grupos.has(k)) grupos.set(k, []); grupos.get(k).push(f); });
-  const suma = filas.reduce((a,f) => a + (f.bonificacion ? 0 : toNum(f.importe)), 0), total = toNum(d.total) || suma;
-  const cuadra = !toNum(d.total) || Math.abs(suma - toNum(d.total)) < 0.01;
+  const suma = filas.reduce((a,f) => a + (f.bonificacion ? 0 : toNum(f.importe)), 0), total = d.pedidoId ? suma : (toNum(d.total) || suma);
+  const cuadra = d.pedidoId || !toNum(d.total) || Math.abs(suma - toNum(d.total)) < 0.01;
   const filasHtml = [...grupos.values()].map(fs => {
     const p = porNombre(fs[0].nombre), entran = fs.reduce((a,f) => a+toNum(f.cantidad)*toNum(f.factor), 0);
     const imp = fs.reduce((a,f) => a + (f.bonificacion ? 0 : toNum(f.importe)), 0), bon = fs.filter(f => f.bonificacion).reduce((a,f) => a+toNum(f.cantidad)*toNum(f.factor), 0);
@@ -881,7 +951,7 @@ async function guardarRecepcion(btn){
         unidad_compra:String(f.unidad || "UN").toUpperCase(), factor:toNum(f.factor), unidades:c*toNum(f.factor), precio_unit:toNum(f.precioUnit),
         importe: f.bonificacion ? 0 : toNum(f.importe), bonificacion: !!f.bonificacion, observacion: f.observacion || null}); });
     }
-    const total = toNum(d.total) || items.reduce((a,i) => a+i.importe, 0);
+    const total = d.pedidoId ? items.reduce((a,i) => a+i.importe, 0) : (toNum(d.total) || items.reduce((a,i) => a+i.importe, 0));
     const [rec] = await insertar("recepciones", {pedido_id:d.pedidoId, proveedor_id:pr.id, fecha:d.fecha || hoy(), documento:d.documento.trim() || null, total, condicion:d.condicion, dias_credito: d.condicion === "credito" ? toNum(d.dias) : null, vence: d.condicion === "credito" ? sumarDias(d.fecha || hoy(), toNum(d.dias)) : null, origen: d.leida ? "foto" : "manual"});
     if(items.length) await insertar("recepcion_items", items.map(i => ({...i, recepcion_id:rec.id})));
     if(d.pedidoId){ await cargar(); const pe = S.pedidos.find(p => p.id === d.pedidoId); if(pe){ const a = avancePedido(pe); await actualizar("pedidos", pe.id, {estado: a.lineas.every(l => l.pendiente <= 0) ? "recibido" : "parcial"}); } }
@@ -1050,16 +1120,20 @@ document.addEventListener("click", async e => {
     }
     else if(a === "anular-venta"){ if(t.dataset.ok !== "1"){ t.dataset.ok = "1"; t.textContent = "¿Seguro?"; return; } await borrar("ventas", id); await refrescar(true); toast("Venta anulada."); }
     // Pedidos
-    else if(a === "nuevo-pedido"){ S.pedido = {proveedor:"", entrega: sumarDias(hoy(),1), lineas:[{nombre:"", cantidad:1, unidad:"CAJA", factor:1, precio:""}]}; ir("pedidos"); }
-    else if(a === "add-pl"){ S.pedido.lineas.push({nombre:"", cantidad:1, unidad:"CAJA", factor:1, precio:""}); render(); }
-    else if(a === "del-pl"){ S.pedido.lineas.splice(+t.dataset.i, 1); if(!S.pedido.lineas.length) S.pedido.lineas.push({nombre:"", cantidad:1, unidad:"CAJA", factor:1, precio:""}); render(); }
+    else if(a === "nuevo-pedido"){ S.pedido = nuevoPedidoVacio(); ir("pedidos"); }
+    else if(a === "add-pl"){ S.pedido.lineas.push(lineaPedido()); render(); }
+    else if(a === "del-pl"){ S.pedido.lineas.splice(+t.dataset.i, 1); if(!S.pedido.lineas.length) S.pedido.lineas.push(lineaPedido()); render(); }
     else if(a === "cancelar-pedido-form"){ S.pedido = null; render(); }
     else if(a === "guardar-pedido") await guardarPedido(t);
     else if(a === "cerrar-pedido"){ if(t.dataset.ok !== "1"){ t.dataset.ok = "1"; t.textContent = "Confirmar"; return; } await actualizar("pedidos", id, {estado:"cerrado"}); await refrescar(true); toast("Pedido cerrado."); }
-    else if(a === "recibir-pedido"){ nuevaRecepcion(id); S.rec.modo = t.dataset.modo || "completo"; render(); }
+    else if(a === "recibir-pedido"){ nuevaRecepcion(id); S.rec.modo = t.dataset.modo || "completo"; render(); if(S.rec.modo === "completo") abrirConfirmacion(); }
     // Recibir
     else if(a === "recibir-directo") nuevaRecepcion(null);
-    else if(a === "subir-boleta"){ if(!S.rec) nuevaRecepcion(null); else ir("recibir"); setTimeout(() => $("#foto")?.click(), 80); }
+    else if(a === "subir-boleta"){ if(!S.pedido) S.pedido = nuevoPedidoVacio(); ir("pedidos"); setTimeout(() => $("#foto-pedido")?.click(), 80); }
+    else if(a === "leer-pedido") leerBoletaPedido();
+    else if(a === "cond-pedido"){ S.pedido.condicion = t.dataset.v; render(); }
+    else if(a === "zoom-pedido") abrirZoom(S.pedido.url);
+    else if(a === "girar-pedido"){ S.pedido.img = await girarImagen(S.pedido.img); S.pedido.url = S.pedido.img.src; render(); }
     else if(a === "descartar-rec"){ S.rec = null; render(); }
     else if(a === "leer") leerBoleta();
     else if(a === "cond"){ S.rec.condicion = t.dataset.v; render(); }
@@ -1142,8 +1216,9 @@ document.addEventListener("input", e => {
     if((k === "cantidad" || k === "precioUnit") && !f.importeManual && !f.bonificacion){ f.importe = Math.round(toNum(f.cantidad)*toNum(f.precioUnit)*100)/100 || ""; if(imp) imp.value = f.importe; }
     actualizarFila(i); return;
   }
-  if(t.dataset.pf){ S.pedido[t.dataset.pf] = t.value; return; }
-  if(t.dataset.pl !== undefined){ S.pedido.lineas[+t.dataset.pl][t.dataset.k] = t.value; if(t.dataset.k === "nombre"){ const p = porNombre(t.value); if(p){ const big = Object.entries(p.presentaciones||{}).sort((a,b) => b[1]-a[1])[0]; if(big){ S.pedido.lineas[+t.dataset.pl].unidad = big[0]; S.pedido.lineas[+t.dataset.pl].factor = big[1]; } } } return; }
+  const cuadreP = () => { const c = $("#cuadre-pedido"); if(c) c.textContent = cuadrePedidoTxt(); };
+  if(t.dataset.pf){ S.pedido[t.dataset.pf] = t.value; cuadreP(); return; }
+  if(t.dataset.pl !== undefined){ if(t.type === "checkbox") return; S.pedido.lineas[+t.dataset.pl][t.dataset.k] = t.value; cuadreP(); if(t.dataset.k === "nombre"){ const p = porNombre(t.value); if(p){ const big = Object.entries(p.presentaciones||{}).sort((a,b) => b[1]-a[1])[0]; if(big){ S.pedido.lineas[+t.dataset.pl].unidad = big[0]; S.pedido.lineas[+t.dataset.pl].factor = big[1]; } } } return; }
   const d = S.rec; if(!d) return;
   if(t.dataset.h){ d[t.dataset.h] = t.value; if(t.dataset.h === "total") $("#cuadre").innerHTML = cuadreHtml(); return; }
 });
@@ -1151,6 +1226,12 @@ document.addEventListener("change", async e => {
   const t = e.target;
   if(["f-linea","f-marca","f-prov"].includes(t.id)){ S.f[t.id.slice(2)] = t.value; render(); return; }
   if(t.dataset.pl !== undefined && t.dataset.k === "nombre"){ render(); return; }
+  if(t.dataset.pl !== undefined && t.dataset.k === "bonif"){ S.pedido.lineas[+t.dataset.pl].bonif = t.checked; render(); return; }
+  if(t.id === "foto-pedido" && t.files?.[0]){
+    try{ const {im, url} = await cargarImagen(t.files[0]); Object.assign(S.pedido, {img:im, url, error:"", leida:false}); render(); leerBoletaPedido(); }
+    catch{ S.pedido.error = "No pude abrir esa imagen. Prueba con otra foto."; render(); }
+    return;
+  }
   if(t.dataset.pf === "proveedor") return;
   if(t.id === "foto" && t.files?.[0]){
     try{ const {im, url} = await cargarImagen(t.files[0]); Object.assign(S.rec, {img:im, url, error:"", leida:false}); render(); }
@@ -1189,10 +1270,12 @@ async function guardarPedido(btn){
   const items = [];
   for(const l of lineas){
     let p = porNombre(l.nombre);
-    if(!p){ [p] = await insertar("productos", {nombre:l.nombre.trim(), presentaciones:{[String(l.unidad||"UN").toUpperCase()]: toNum(l.factor) || 1}}); S.productos.push(p); }
-    items.push({producto_id:p.id, cantidad:toNum(l.cantidad), unidad_compra:String(l.unidad||"UN").toUpperCase().trim(), factor:toNum(l.factor) || 1, precio_unit: toNum(l.precio) || null});
+    const uc = String(l.unidad||"UN").toUpperCase().trim(), alias = l.descripcion ? [norm(l.descripcion)] : [];
+    if(!p){ [p] = await insertar("productos", {nombre:l.nombre.trim(), marca: l.marca || null, linea: l.linea || null, presentaciones:{[uc]: toNum(l.factor) || 1}, alias}); S.productos.push(p); }
+    else if(alias.length && !(p.alias||[]).includes(alias[0])) await actualizar("productos", p.id, {alias:[...(p.alias||[]), alias[0]], presentaciones:{...(p.presentaciones||{}), [uc]: toNum(l.factor) || 1}});
+    items.push({producto_id:p.id, cantidad:toNum(l.cantidad), unidad_compra:uc, factor:toNum(l.factor) || 1, precio_unit: toNum(l.precio) || null, bonificacion: !!l.bonif, descripcion: l.descripcion || null});
   }
-  const [pe] = await insertar("pedidos", {proveedor_id:pr.id, entrega:d.entrega || null});
+  const [pe] = await insertar("pedidos", {proveedor_id:pr.id, entrega:d.entrega || null, documento: (d.documento || "").trim() || null, total: toNum(d.total) || items.reduce((a,i) => a + (i.bonificacion ? 0 : i.cantidad*toNum(i.precio_unit)), 0), condicion: d.condicion === "credito" ? "credito" : "contado", dias_credito: d.condicion === "credito" ? toNum(d.dias) || 15 : null});
   await insertar("pedido_items", items.map(i => ({...i, pedido_id:pe.id})));
   S.pedido = null; await refrescar(true); toast("Pedido guardado. Cuando llegue, tócalo para recibirlo.");
 }
