@@ -314,6 +314,24 @@ tr.click:hover td{background:#F7FAFF}
 @media (max-width:1100px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .kpi .val{font-size:clamp(1.35rem,2.4vw,1.85rem);white-space:nowrap}
 .kpi .lab{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* Celular: cada producto como tarjeta */
+@media (max-width:720px){
+  table.lm thead{display:none}
+  table.lm tbody tr{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:14px;row-gap:3px;align-items:center;padding:14px 2px;border-bottom:1px solid var(--line)}
+  table.lm tbody tr:last-child{border-bottom:0}
+  table.lm td{border:0;padding:0;text-align:right;white-space:nowrap}
+  table.lm td:first-child{grid-column:1;grid-row:1/span 3;text-align:left;white-space:normal;line-height:1.35}
+  table.lm td:first-child b{font-size:1rem}
+  table.lm td:not(:first-child){grid-column:2}
+  table.lm td:nth-child(2) b{font-size:1.25rem;font-family:var(--f-display)}
+  table.lm-stock td:nth-child(3),table.lm-inv td:nth-child(2),table.lm-inv td:nth-child(4){display:none}
+  table.lm-stock td:nth-child(4),table.lm-inv td:nth-child(5),table.lm-alert td:nth-child(3){font-size:.82rem;color:var(--muted)}
+  table.lm-inv td:nth-child(3) b{font-size:1.25rem}
+  .filters{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .filters>input{grid-column:1/-1}
+  .filters select,.filters input{min-height:40px;font-size:.9rem;padding:7px 10px}
+  h1{font-size:1.55rem}
+}
 .cod{display:inline-block;font-family:var(--f-mono);font-size:.72rem;font-weight:500;color:var(--accent);background:var(--accent-weak);border-radius:6px;padding:1px 6px;margin-right:6px;vertical-align:1px}
 </style>
 </head>
@@ -484,11 +502,11 @@ const ICON = {
   pruebas:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 11v5M14 11v5"/></svg>'
 };
 function pintarNav(){
-  const nAl = S.conectado ? totalAlertas() : 0;
-  const tabs = [["inicio","Resumen de inventario"],["alertas","Alertas" + (nAl ? ` (${nAl})` : "")],["pedidos","Pedidos"],["recibir","Recibir mercadería"],["compras","Historial de compras"],["creditos","Créditos"],["inventario","Inventario valorizado"],["proveedores","Proveedores"],["pruebas","Borrar pruebas"]];
+  const nAl = S.conectado ? totalAlertas() : 0, nRec = S.pedidos.filter(p => p.estado === "pendiente").length;
+  const tabs = [["inicio","Resumen de inventario"],["alertas","Alertas" + (nAl ? ` (${nAl})` : "")],["pedidos","Pedidos"],["recibir","Recibir mercadería" + (nRec ? ` (${nRec})` : "")],["compras","Historial de compras"],["creditos","Créditos"],["inventario","Inventario valorizado"],["proveedores","Proveedores"],["pruebas","Borrar pruebas"]];
   $("#tabs").innerHTML = tabs.map(([v,t]) => `<button data-go="${v}" aria-current="${S.view===v}">${ICON[v]}<span>${t}</span></button>`).join("");
   const enMas = ["inventario","compras","creditos","proveedores","pruebas","mas"].includes(S.view);
-  $("#bottom").innerHTML = [["inicio","Resumen"],["alertas", nAl ? `Alertas (${nAl})` : "Alertas"],["pedidos","Pedidos"],["recibir","Recibir"],["mas","Más"]]
+  $("#bottom").innerHTML = [["inicio","Resumen"],["alertas", nAl ? `Alertas (${nAl})` : "Alertas"],["pedidos","Pedidos"],["recibir", nRec ? `Recibir (${nRec})` : "Recibir"],["mas","Más"]]
     .map(([v,t]) => `<button data-go="${v}" aria-current="${v==="mas" ? enMas : S.view===v}">${ICON[v]}<span>${t}</span></button>`).join("");
 }
 function ir(v){ S.view = v; try{ history.replaceState(null, "", "#"+v); }catch{} render(); window.scrollTo(0,0); }
@@ -561,7 +579,7 @@ function vistaInicio(){
       <select id="f-marca" aria-label="Marca">${opts(S.productos.map(p => p.marca || "Sin marca"), f.marca, "Todas las marcas")}</select>
       <select id="f-prov" aria-label="Proveedor"><option value="">Todos los proveedores</option>${S.proveedores.map(v => `<option value="${v.id}" ${v.id===f.prov?"selected":""}>${esc(v.nombre)}</option>`).join("")}</select>
     </div>
-    <div class="tbl"><table>
+    <div class="tbl"><table class="lm lm-stock">
       <thead><tr><th>Producto</th><th class="r">Stock</th><th class="r">Costo c/u</th><th class="r">Valor</th><th>Estado</th></tr></thead>
       <tbody>${ps.map(p => { const c = C.get(p.id); return `<tr class="click" data-act="abrir" data-id="${p.id}">
         <td><span class="cod">${esc(p.codigo || "")}</span><b>${esc(p.nombre)}</b><br><span class="small muted">${esc([p.marca,p.linea].filter(Boolean).join(" · "))}</span></td>
@@ -1114,7 +1132,7 @@ function vistaInventario(){
   const C = new Map(S.productos.map(p => [p.id, calc(p)]));
   const valor = [...C.values()].reduce((a,c) => a+c.valor, 0);
   return `<div><h1>Inventario general</h1><p class="sub">${S.productos.length} productos · ${soles(valor)} a costo real</p></div>
-  <section class="card"><div class="tbl"><table><thead><tr><th>Producto</th><th>Línea</th><th class="r">Stock</th><th class="r">Costo c/u</th><th class="r">Valor</th><th>Estado</th></tr></thead><tbody>
+  <section class="card"><div class="tbl"><table class="lm lm-inv"><thead><tr><th>Producto</th><th>Línea</th><th class="r">Stock</th><th class="r">Costo c/u</th><th class="r">Valor</th><th>Estado</th></tr></thead><tbody>
     ${S.productos.map(p => { const c = C.get(p.id); return `<tr class="click" data-act="abrir" data-id="${p.id}"><td><span class="cod">${esc(p.codigo || "")}</span><b>${esc(p.nombre)}</b><br><span class="small muted">${esc(p.marca || "")}</span></td><td>${esc(p.linea || "—")}</td><td class="r">${num(c.stock,1)} <span class="small muted">${esc(plural(uv(p),c.stock))}</span></td><td class="r">${c.costo !== null ? soles(c.costo) : "—"}</td><td class="r">${soles(c.valor)}</td><td>${pill(c.estado)}</td></tr>`; }).join("") || `<tr><td colspan="6" class="muted">Aún no hay productos.</td></tr>`}
   </tbody></table></div></section>`;
 }
@@ -1214,7 +1232,7 @@ const totalAlertas = () => { const a = alertasDatos(); return a.agot.length + a.
 function vistaAlertas(){
   const {C, agot, bajo, sinMin, creds, atras} = alertasDatos();
   const fila = p => { const c = C.get(p.id); return `<tr class="click" data-act="abrir" data-id="${p.id}"><td><span class="cod">${esc(p.codigo || "")}</span><b>${esc(p.nombre)}</b><br><span class="small muted">${esc([p.marca, p.linea].filter(Boolean).join(" · "))}</span></td><td class="r"><b>${num(c.stock,1)}</b> <span class="small muted">${esc(plural(uv(p), c.stock))}</span></td><td class="r">${toNum(p.stock_minimo) || "—"}</td><td>${pill(c.estado)}</td></tr>`; };
-  const tabla = ps => `<div class="tbl"><table><thead><tr><th>Producto</th><th class="r">Stock</th><th class="r">Mínimo</th><th>Estado</th></tr></thead><tbody>${ps.map(fila).join("")}</tbody></table></div>`;
+  const tabla = ps => `<div class="tbl"><table class="lm lm-alert"><thead><tr><th>Producto</th><th class="r">Stock</th><th class="r">Mínimo</th><th>Estado</th></tr></thead><tbody>${ps.map(fila).join("")}</tbody></table></div>`;
   return `<div class="row between"><div><h1>Alertas</h1><p class="sub">Lo que necesita tu atención hoy: stock que se acaba, pagos por vencer y pedidos atrasados.</p></div>
     <div class="row"><button class="btn" data-act="excel-stock">⬇ Descargar Excel</button><button class="btn wa" data-act="wa-resumen">${waIcon()} Enviar por WhatsApp</button></div></div>
   <div class="kpis">
