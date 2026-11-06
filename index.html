@@ -121,12 +121,33 @@ tr.click{cursor:pointer}tr.click:hover td{background:var(--soft)}
 /* Recibir */
 .drop{border:1.5px dashed var(--line);border-radius:var(--r);padding:16px;display:grid;gap:12px;justify-items:center;text-align:center;background:var(--soft)}
 .drop img{max-height:200px;border-radius:8px;border:1px solid var(--line)}
-.grupo{border:1px solid var(--line);border-radius:10px;padding:12px;display:grid;gap:10px;background:var(--surface)}
-.grupo.dup{border-color:var(--warn)}.grupo.falta{border-color:var(--bad)}
-.linea{display:grid;grid-template-columns:repeat(4,minmax(70px,1fr)) minmax(120px,1.4fr) auto auto;gap:8px;align-items:end;padding-top:10px;border-top:1px dashed var(--line)}
-.linea .desc{grid-column:1/-1;font-family:var(--f-mono);font-size:.78rem;color:var(--muted);overflow-wrap:anywhere}
-.linea .bon{display:flex;align-items:center;gap:6px;font-size:.8rem;font-weight:600;color:var(--bonus);padding-bottom:10px}
-@media (max-width:720px){.linea{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.recibir-grid{display:grid;grid-template-columns:minmax(240px,320px) minmax(0,1fr);gap:16px;align-items:start}
+.foto-lado{position:sticky;top:120px}
+.foto-lado img{width:100%;max-height:68vh;object-fit:contain;border-radius:8px;border:1px solid var(--line);cursor:zoom-in;background:var(--soft)}
+@media (max-width:900px){.recibir-grid{grid-template-columns:minmax(0,1fr)}.foto-lado{position:static}.foto-lado img{max-height:240px}}
+table.boleta{min-width:900px}
+table.boleta td{padding:4px}
+table.boleta input,table.boleta select{min-height:38px;padding:6px 8px}
+table.boleta td.n input{text-align:right;font-variant-numeric:tabular-nums;min-width:70px}
+table.boleta td.prod{min-width:230px}
+table.boleta td.c{text-align:center}
+table.boleta tr.bon td{background:var(--bonus-weak)}
+table.boleta tr.falta td{background:var(--bad-weak)}
+table.boleta tr.nollego td{opacity:.55}
+table.boleta .hint{font-size:.74rem;margin-top:3px;line-height:1.3}
+.linkbtn{all:unset;cursor:pointer;text-decoration:underline;font-weight:600}
+@media (max-width:720px){
+  table.boleta{min-width:0}
+  table.boleta thead{display:none}
+  table.boleta tr{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding:10px;border:1px solid var(--line);border-radius:10px;margin-bottom:10px}
+  table.boleta td{border:0;padding:0}
+  table.boleta td.prod{grid-column:1/-1}
+  table.boleta td[data-l]::before{content:attr(data-l);display:block;font-size:.72rem;color:var(--muted);font-weight:600;margin-bottom:2px}
+  table.boleta td.c{text-align:left}
+}
+.zoom{position:fixed;inset:0;z-index:40;background:rgba(0,0,0,.92);overflow:auto;padding-top:64px}
+.zoom img{display:block;margin:0 auto;max-width:none}
+.zoom-bar{position:fixed;top:calc(12px + env(safe-area-inset-top,0px));right:12px;z-index:41;display:flex;gap:8px}
 .cuadre{font-weight:600;padding:10px 12px;border-radius:9px}
 .cuadre.ok{background:var(--ok-weak);color:var(--ok)}.cuadre.bad{background:var(--warn-weak);color:var(--warn)}
 .seg{display:inline-flex;border:1px solid var(--line);border-radius:9px;overflow:hidden}
@@ -147,6 +168,31 @@ tr.click{cursor:pointer}tr.click:hover td{background:var(--soft)}
 @keyframes sp{to{transform:rotate(360deg)}}
 @media (prefers-reduced-motion:reduce){.spin{animation:none}}
 .login{max-width:420px;margin:12vh auto 0}
+/* Rediseño: cabecera verde botica, menú en pastillas, tarjetas con sombra suave */
+:root{--accent:#0E7C66;--accent-weak:#DCF2EB;--on-accent:#FFFFFF;--bg:#F2F5F4;--surface:#FFFFFF;--line:#DCE4E1;--soft:#EDF2F0;--ink:#13211D;--muted:#566863;--brand:#0B3B33;--brand-ink:#F2FBF8;--shadow:0 1px 2px rgba(16,40,34,.06),0 6px 18px rgba(16,40,34,.06)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--accent:#3FCBA8;--accent-weak:#123B32;--on-accent:#06201A;--bg:#0C1412;--surface:#131D1A;--line:#24332F;--soft:#18231F;--ink:#E4EEEB;--muted:#93A6A0;--brand:#0A2722;--brand-ink:#E4F7F1;--shadow:none}}
+:root[data-theme="dark"]{--accent:#3FCBA8;--accent-weak:#123B32;--on-accent:#06201A;--bg:#0C1412;--surface:#131D1A;--line:#24332F;--soft:#18231F;--ink:#E4EEEB;--muted:#93A6A0;--brand:#0A2722;--brand-ink:#E4F7F1;--shadow:none}
+header{background:var(--brand);border-bottom:0;color:var(--brand-ink)}
+header .brand{color:var(--brand-ink);font-size:1.4rem}
+header .live{color:rgba(242,251,248,.72)}
+nav.tabs{gap:6px;padding-bottom:12px;margin-bottom:0}
+nav.tabs button{border:0;border-radius:999px;padding:8px 14px;color:rgba(242,251,248,.78)}
+nav.tabs button:hover{background:rgba(255,255,255,.08)}
+nav.tabs button[aria-current="true"]{background:rgba(255,255,255,.18);color:#fff}
+header .btn.primary{background:#fff;border-color:#fff;color:#0B3B33}
+main{gap:20px}
+h1{font-size:1.75rem}
+.card,.kpi{box-shadow:var(--shadow)}
+.card{border-radius:14px;padding:18px}
+.kpi{border-radius:14px;padding:16px 18px;border-top:3px solid var(--accent)}
+.kpi .val{font-size:1.75rem}
+.btn{border-radius:10px}
+.alerta{border-radius:12px;padding:12px 14px}
+.pedido-rec{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center;padding:14px;border:1px solid var(--line);border-radius:12px;background:var(--soft)}
+table th{background:var(--soft)}
+table th:first-child{border-top-left-radius:8px}table th:last-child{border-top-right-radius:8px}
+.login .card,.login{box-shadow:var(--shadow)}
+nav.bottom button[aria-current="true"] svg{stroke-width:2.4}
 </style>
 </head>
 <body>
@@ -154,7 +200,7 @@ tr.click{cursor:pointer}tr.click:hover td{background:var(--soft)}
   <div class="wrap">
     <div class="top">
       <div class="brand">Kardex <span class="live" id="live"><i></i><span>conectando…</span></span></div>
-      <button class="btn primary sm" data-go="vender" id="btnVenderTop">Vender</button>
+      <button class="btn primary sm" data-go="recibir" id="btnVenderTop">Recibir mercadería</button>
     </div>
     <nav class="tabs" id="tabs"></nav>
   </div>
@@ -184,7 +230,7 @@ const S = {
   view: (location.hash || "#inicio").slice(1), f: {q:"", linea:"", marca:"", prov:""},
   venta: {q:"", sel:null, cant:1, precio:""}, pedido: null, rec: null, abierto: null
 };
-const VIEWS = ["inicio","vender","pedidos","recibir","inventario","compras","creditos","proveedores","mas"];
+const VIEWS = ["inicio","pedidos","recibir","compras","inventario","creditos","proveedores","mas"];
 if(!VIEWS.includes(S.view)) S.view = "inicio";
 
 // ---------- Utilidades ----------
@@ -249,7 +295,7 @@ async function cargar(){
   finally{ S.cargando = false; }
 }
 function marcarVivo(ok){ const l = $("#live"); l.classList.toggle("off", !ok); l.lastElementChild.textContent = ok ? "en vivo · "+hora(Date.now()) : "sin conexión"; }
-const editando = () => ["vender","pedidos","recibir"].includes(S.view) && (S.pedido || S.rec || document.activeElement?.matches?.("input,select,textarea"));
+const editando = () => ["pedidos","recibir"].includes(S.view) && (S.pedido || S.rec || document.activeElement?.matches?.("input,select,textarea"));
 async function refrescar(forzar){ await cargar(); if(forzar || !editando()) render(); if(S.abierto && !document.activeElement?.closest?.(".sheet")) renderFicha(); }
 
 // ---------- Cálculos ----------
@@ -306,10 +352,10 @@ const ICON = {
   mas:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>'
 };
 function pintarNav(){
-  const tabs = [["inicio","Inicio"],["vender","Vender"],["pedidos","Pedidos"],["recibir","Recibir mercadería"],["inventario","Inventario"],["compras","Compras"],["creditos","Créditos"],["proveedores","Proveedores"],["mas","Más"]];
-  $("#tabs").innerHTML = tabs.map(([v,t]) => `<button data-go="${v}" aria-current="${S.view===v}">${t}</button>`).join("");
-  const enMas = ["inventario","compras","creditos","proveedores","mas"].includes(S.view);
-  $("#bottom").innerHTML = [["inicio","Inicio"],["vender","Vender"],["pedidos","Pedidos"],["recibir","Recibir"],["mas","Más"]]
+  const tabs = [["inicio","Resumen de inventario"],["pedidos","Pedidos"],["recibir","Recibir mercadería"],["compras","Historial de compras"],["creditos","Créditos"],["mas","Más"]];
+  $("#tabs").innerHTML = tabs.map(([v,t]) => `<button data-go="${v}" aria-current="${S.view===v || (v==="mas" && ["inventario","proveedores"].includes(S.view))}">${t}</button>`).join("");
+  const enMas = ["inventario","creditos","proveedores","mas"].includes(S.view);
+  $("#bottom").innerHTML = [["inicio","Resumen"],["pedidos","Pedidos"],["recibir","Recibir"],["compras","Historial"],["mas","Más"]]
     .map(([v,t]) => `<button data-go="${v}" aria-current="${v==="mas" ? enMas : S.view===v}">${ICON[v]}<span>${t}</span></button>`).join("");
 }
 function ir(v){ S.view = v; try{ history.replaceState(null, "", "#"+v); }catch{} render(); window.scrollTo(0,0); }
@@ -338,12 +384,12 @@ function vistaLogin(){
 
 // ----- Inicio -----
 function vistaInicio(){
-  if(!S.productos.length) return `<div class="card empty"><h2>Bienvenido a tu Kardex</h2>
-    <p>Empieza registrando la mercadería que llegó: toma una foto a la boleta y se llena sola. También puedes crear primero un pedido.</p>
-    <div class="row" style="justify-content:center"><button class="btn primary" data-go="recibir">Recibir mercadería</button><button class="btn" data-act="nuevo-pedido">Hacer un pedido</button></div></div>`;
+  if(!S.productos.length) return `<div><h1>Resumen de inventario</h1></div><div class="card empty"><h2>Tu inventario está vacío</h2>
+    <p>1. Anota tu <b>pedido</b> al proveedor. 2. Cuando llegue el reparto, ve a <b>Recibir mercadería</b> y marca si llegó completo. Tu stock se llena solo.</p>
+    <div class="row" style="justify-content:center"><button class="btn primary" data-act="nuevo-pedido">Hacer un pedido</button><button class="btn" data-go="recibir">Recibir mercadería</button></div></div>`;
   const C = new Map(S.productos.map(p => [p.id, calc(p)]));
-  const ventasHoy = S.ventas.filter(v => diaLocal(v.creado) === hoy());
-  const totalHoy = ventasHoy.reduce((a,v) => a+toNum(v.total), 0);
+  const recMes = S.recepciones.filter(r => (r.fecha || "").startsWith(hoy().slice(0,7)));
+  const compradoMes = recMes.reduce((a,r) => a+toNum(r.total), 0);
   const valor = [...C.values()].reduce((a,c) => a+c.valor, 0);
   const pend = S.pedidos.filter(p => ["pendiente","parcial"].includes(p.estado));
   const creds = S.recepciones.map(r => ({r, e:estadoCredito(r)})).filter(x => x.e);
@@ -363,10 +409,10 @@ function vistaInicio(){
   ];
 
   return `
-  <div class="row between"><div><h1>Hoy, ${fechaLarga(hoy())}</h1><p class="sub">El stock se actualiza solo con cada venta y cada recepción.</p></div>
+  <div class="row between"><div><h1>Resumen de inventario</h1><p class="sub">${fechaLarga(hoy())} · el stock se actualiza solo con cada mercadería recibida.</p></div>
     <button class="btn wa" data-act="wa-resumen">${waIcon()} Enviar resumen por WhatsApp</button></div>
   <div class="kpis">
-    <button class="kpi" data-go="vender"><span class="lab">Vendido hoy</span><span class="val">${soles(totalHoy)}</span><span class="note">${ventasHoy.length} venta${ventasHoy.length===1?"":"s"}</span></button>
+    <button class="kpi" data-go="compras"><span class="lab">Comprado este mes</span><span class="val">${soles(compradoMes)}</span><span class="note">${recMes.length} recepción${recMes.length===1?"":"es"}</span></button>
     <button class="kpi" data-go="inventario"><span class="lab">Valor del stock</span><span class="val">${soles(valor)}</span><span class="note">${S.productos.length} productos, a costo real</span></button>
     <button class="kpi" data-go="pedidos"><span class="lab">Pedidos por llegar</span><span class="val">${pend.length}</span><span class="note">${atrasados.length ? `<span style="color:var(--warn)">${atrasados.length} atrasado${atrasados.length===1?"":"s"}</span>` : "al día"}</span></button>
     <button class="kpi" data-go="creditos"><span class="lab">Créditos por pagar</span><span class="val" style="${credUrg.length?"color:var(--bad)":""}">${soles(creds.reduce((a,x) => a+toNum(x.r.total),0))}</span><span class="note">${credUrg.length ? `${credUrg.length} vence${credUrg.length===1?"":"n"} pronto` : `${creds.length} pendiente${creds.length===1?"":"s"}`}</span></button>
@@ -381,12 +427,12 @@ function vistaInicio(){
       <select id="f-prov" aria-label="Proveedor"><option value="">Todos los proveedores</option>${S.proveedores.map(v => `<option value="${v.id}" ${v.id===f.prov?"selected":""}>${esc(v.nombre)}</option>`).join("")}</select>
     </div>
     <div class="tbl"><table>
-      <thead><tr><th>Producto</th><th class="r">Stock</th><th class="r">Vendido hoy</th><th class="r">Alcanza</th><th>Estado</th></tr></thead>
+      <thead><tr><th>Producto</th><th class="r">Stock</th><th class="r">Costo c/u</th><th class="r">Valor</th><th>Estado</th></tr></thead>
       <tbody>${ps.map(p => { const c = C.get(p.id); return `<tr class="click" data-act="abrir" data-id="${p.id}">
         <td><b>${esc(p.nombre)}</b><br><span class="small muted">${esc([p.marca,p.linea].filter(Boolean).join(" · "))}</span></td>
         <td class="r"><b>${num(c.stock,1)}</b> <span class="small muted">${esc(plural(uv(p),c.stock))}</span></td>
-        <td class="r">${c.vendidoHoy ? num(c.vendidoHoy,1) : "—"}</td>
-        <td class="r">${cobTxt(c)}</td><td>${pill(c.estado)}</td></tr>`; }).join("") || `<tr><td colspan="5" class="muted">Ningún producto coincide.</td></tr>`}</tbody>
+        <td class="r">${c.costo !== null ? soles(c.costo) : "—"}</td>
+        <td class="r">${soles(c.valor)}</td><td>${pill(c.estado)}</td></tr>`; }).join("") || `<tr><td colspan="5" class="muted">Ningún producto coincide.</td></tr>`}</tbody>
     </table></div>
   </section>`;
 }
@@ -394,8 +440,8 @@ const waIcon = () => '<svg width="18" height="18" viewBox="0 0 24 24" fill="curr
 
 function mensajeResumen(){
   const C = new Map(S.productos.map(p => [p.id, calc(p)]));
-  const ventasHoy = S.ventas.filter(v => diaLocal(v.creado) === hoy());
-  const L = [`*Kardex · ${fechaLarga(hoy())}*`, `Vendido hoy: ${soles(ventasHoy.reduce((a,v) => a+toNum(v.total),0))} (${ventasHoy.length} ventas)`];
+  const valor = [...C.values()].reduce((a,c) => a+c.valor, 0);
+  const L = [`*Kardex · ${fechaLarga(hoy())}*`, `Valor del inventario: ${soles(valor)} (${S.productos.length} productos)`];
   const riesgo = S.productos.filter(p => ["agotado","quiebre","bajo"].includes(C.get(p.id).estado));
   if(riesgo.length){ L.push("", "*Por agotarse:*"); riesgo.forEach(p => { const c = C.get(p.id); L.push(`• ${p.nombre}: quedan ${num(c.stock,1)}${c.sugerido ? ` → pedir ${c.sugerido.cant} ${c.sugerido.unidad.toLowerCase()}` : ""}`); }); }
   const creds = S.recepciones.map(r => ({r, e:estadoCredito(r)})).filter(x => x.e && x.e.d <= DIAS_AVISO_CREDITO);
@@ -480,12 +526,13 @@ function formPedido(){
     </div>
     <datalist id="dlProv">${S.proveedores.map(p => `<option value="${esc(p.nombre)}">`).join("")}</datalist>
     <datalist id="dlProd">${S.productos.map(p => `<option value="${esc(p.nombre)}">`).join("")}</datalist>
-    <div class="tbl"><table><thead><tr><th>Producto</th><th>Cantidad</th><th>Unidad</th><th>Trae</th><th></th></tr></thead><tbody>
+    <div class="tbl"><table><thead><tr><th>Producto</th><th>Cantidad</th><th>Unidad</th><th>Trae</th><th>Precio S/</th><th></th></tr></thead><tbody>
       ${d.lineas.map((l,i) => { const p = porNombre(l.nombre); const dup = !p && l.nombre ? parecidos(l.nombre) : [];
         return `<tr><td style="min-width:200px"><input data-pl="${i}" data-k="nombre" list="dlProd" value="${esc(l.nombre)}" placeholder="Escribe o elige">${p ? `<span class="small muted">En inventario</span>` : l.nombre ? `<span class="small" style="color:var(--warn)">${dup.length ? "¿Es "+esc(dup[0].nombre)+"?" : "Producto nuevo"}</span>` : ""}</td>
         <td style="min-width:80px"><input data-pl="${i}" data-k="cantidad" inputmode="decimal" value="${esc(l.cantidad)}"></td>
         <td style="min-width:90px"><input data-pl="${i}" data-k="unidad" value="${esc(l.unidad)}" placeholder="CAJA"></td>
         <td style="min-width:70px"><input data-pl="${i}" data-k="factor" inputmode="decimal" value="${esc(l.factor)}" title="Unidades de venta que trae cada una"></td>
+        <td style="min-width:90px"><input data-pl="${i}" data-k="precio" inputmode="decimal" value="${esc(l.precio ?? "")}" placeholder="opcional"></td>
         <td><button class="btn sm" data-act="del-pl" data-i="${i}" aria-label="Quitar">✕</button></td></tr>`; }).join("")}
     </tbody></table></div>
     <div class="row"><button class="btn" data-act="add-pl">+ Agregar producto</button></div>
@@ -494,115 +541,130 @@ function formPedido(){
 }
 
 // ----- Recibir -----
+const UNIDADES_COMPRA = ["UN","CAJA","PAQ","TIRA","POTE","SACO","BOLSA","DOC","PACK","FARDO","KG","LT"];
 function vistaRecibir(){
   if(!S.rec){
     const pend = S.pedidos.filter(p => ["pendiente","parcial"].includes(p.estado));
     return `<div><h1>Recibir mercadería</h1><p class="sub">Registra lo que llegó. Si viene de un pedido, elígelo para marcar lo que faltó.</p></div>
-    ${pend.length ? `<section class="card"><h2>¿Es de un pedido?</h2>${pend.map(pe => `<button class="alerta info" style="all:unset;box-sizing:border-box;cursor:pointer;display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;padding:12px;border-radius:10px;background:var(--soft)" data-act="recibir-pedido" data-id="${pe.id}"><span class="dot" style="width:10px;height:10px;border-radius:50%;background:var(--accent)"></span><span><b>${esc(prov(pe.proveedor_id)?.nombre || "Proveedor")}</b> · pedido ${fecha(pe.fecha)}${pe.estado==="parcial" ? " · falta una parte" : ""}</span><span class="btn sm">Elegir</span></button>`).join("")}</section>` : ""}
+    ${pend.length ? `<section class="card"><div><h2>Pedidos por recibir</h2><p class="sub">Cuando llegue el reparto, elige cómo llegó.</p></div>${pend.map(pe => { const a = avancePedido(pe), monto = a.lineas.reduce((s,l) => s + l.pendiente/toNum(l.factor||1)*toNum(l.precio_unit), 0);
+      return `<div class="pedido-rec">
+        <div><b>${esc(prov(pe.proveedor_id)?.nombre || "Proveedor")}</b> <span class="pill ${pe.estado==="parcial"?"bad":"warn"}">${pe.estado==="parcial" ? "Falta una parte" : "Por llegar"}</span><br>
+          <span class="small muted">Pedido ${fecha(pe.fecha)} · llega ${fecha(pe.entrega)} · ${a.lineas.filter(l => l.pendiente > 0).length} productos${monto ? " · "+soles(monto) : ""}</span></div>
+        <div class="row"><button class="btn primary" data-act="recibir-pedido" data-id="${pe.id}" data-modo="completo">✓ Llegó completo</button><button class="btn" data-act="recibir-pedido" data-id="${pe.id}" data-modo="incompleto">Llegó incompleto</button></div>
+      </div>`; }).join("")}</section>` : `<section class="card"><p class="muted" style="margin:0">No tienes pedidos por recibir. <button class="linkbtn" data-act="nuevo-pedido">Hacer un pedido</button></p></section>`}
     <section class="card"><h2>${pend.length ? "O sin pedido" : "Sin pedido"}</h2><p class="sub" style="margin:0">Compra directa o reparto que no anotaste como pedido.</p><button class="btn primary" data-act="recibir-directo">Recibir sin pedido</button></section>
     ${S.recepciones.length ? `<button class="btn" data-go="compras">Ver, revisar o borrar compras registradas (${S.recepciones.length})</button>` : ""}`;
   }
   const d = S.rec, pe = S.pedidos.find(p => p.id === d.pedidoId);
   return `<div class="row between"><div><h1>Recibir mercadería</h1><p class="sub">${pe ? `Pedido a <b>${esc(prov(pe.proveedor_id)?.nombre || "")}</b> del ${fecha(pe.fecha)}` : "Sin pedido"}</p></div><button class="btn" data-act="descartar-rec">Descartar</button></div>
-  <section class="card">
-    <div><h2>1. Foto de la boleta</h2><p class="sub">La app transcribe la foto aquí mismo, gratis. Revisa el texto y los productos y corrige lo que haga falta antes de guardar.</p></div>
-    <div class="drop">
-      ${d.url ? `<img src="${d.url}" alt="Foto de la boleta">` : `<p class="muted" style="margin:0">Boleta completa, derecha y con buena luz.</p>`}
-      <div class="row" style="justify-content:center">
-        <label class="btn ${d.url ? "" : "primary"}" for="foto">${d.url ? "Cambiar foto" : "Tomar o subir foto"}</label>
-        <input id="foto" type="file" accept="image/*" hidden>
-        ${d.url ? (d.leyendo ? `<button class="btn primary" disabled><span class="spin"></span> Leyendo boleta…</button>` : `<button class="btn primary" data-act="leer">${d.leida ? "Leer otra vez" : "Leer boleta"}</button>`) : ""}
-      </div>
-      ${d.leyendo ? `<p class="small muted" style="margin:0" id="ocr-prog">Preparando el lector (la primera vez tarda un poco más)…</p>` : ""}
+  <div class="recibir-grid">
+    <aside class="card foto-lado">
+      <h2>Foto de la boleta</h2>
+      ${d.url ? `<img src="${d.url}" alt="Foto de la boleta" data-act="zoom">
+        <div class="row"><button class="btn sm" data-act="zoom">Ampliar</button><button class="btn sm" data-act="girar">Girar ↻</button><label class="btn sm" for="foto">Cambiar foto</label></div>`
+      : `<p class="small muted" style="margin:0">Súbela para tenerla a la vista mientras llenas el cuadro.</p><label class="btn primary" for="foto">Tomar o subir foto</label>`}
+      <input id="foto" type="file" accept="image/*" hidden>
+      ${d.url ? (d.leyendo ? `<button class="btn" disabled><span class="spin"></span> <span id="ocr-prog">Leyendo…</span></button>`
+        : `<button class="btn" data-act="leer">Intentar llenar el cuadro con la foto</button><p class="small muted" style="margin:0">Es gratis pero falla con letra matricial: revisa cada fila.</p>`) : ""}
       ${d.error ? `<div class="banner bad">${d.error}</div>` : ""}
-      ${d.dudas?.length ? `<div class="banner">Revisa: ${d.dudas.map(esc).join(" · ")}</div>` : ""}
+    </aside>
+    <div style="display:grid;gap:16px;min-width:0">
+      <section class="card" id="paso2">
+        <h2>Datos de la boleta</h2>
+        <div class="grid2">
+          <label class="f">Proveedor<input data-h="proveedor" list="dlProv" value="${esc(d.proveedor)}" placeholder="Ej. Grupo Vega"></label>
+          <label class="f">Fecha<input type="date" data-h="fecha" value="${esc(d.fecha)}"></label>
+          <label class="f">N° de boleta<input data-h="documento" value="${esc(d.documento)}" placeholder="opcional"></label>
+          <label class="f">Total a pagar S/<input data-h="total" inputmode="decimal" value="${d.total || ""}"></label>
+        </div>
+        <datalist id="dlProv">${S.proveedores.map(p => `<option value="${esc(p.nombre)}">`).join("")}</datalist>
+        <div class="row">
+          <span class="seg" role="group" aria-label="Forma de pago"><button data-act="cond" data-v="contado" aria-pressed="${d.condicion==="contado"}">Contado</button><button data-act="cond" data-v="credito" aria-pressed="${d.condicion==="credito"}">Crédito</button></span>
+          ${d.condicion === "credito" ? `<label class="f" style="width:120px">Días<input data-h="dias" inputmode="numeric" value="${esc(d.dias)}"></label><span class="pill warn">Vence ${fecha(sumarDias(d.fecha || hoy(), toNum(d.dias)))}</span>` : ""}
+        </div>
+      </section>
+      <section class="card">
+        ${d.modo === "completo" ? `<div class="banner ok">Todo el pedido está marcado como recibido. Revisa precios, elige <b>contado o crédito</b> arriba y toca <b>Guardar</b>.</div>`
+          : d.modo === "incompleto" ? `<div class="banner">Desmarca <b>¿Llegó?</b> en lo que no llegó, o baja la cantidad si llegó una parte. Lo que falte queda pendiente en el pedido.</div>` : ""}
+        <div><h2>Productos de la boleta</h2><p class="sub">Una fila por cada línea de la boleta. El importe se calcula solo. Lo que sale en 0.00 marca <b style="color:var(--bonus)">Bonif.</b>: entra al stock gratis.</p></div>
+        <datalist id="dlProd">${S.productos.map(p => `<option value="${esc(p.nombre)}">`).join("")}</datalist>
+        <div class="tbl"><table class="boleta"><thead><tr><th>Producto</th>${d.pedidoId ? `<th>¿Llegó?</th>` : ""}<th>Unidad</th><th class="r">Trae</th><th class="r">Cantidad</th><th class="r">Precio S/</th><th class="r">Importe S/</th><th>Bonif.</th><th>¿Cómo llegó?</th><th></th></tr></thead>
+          <tbody>${d.filas.map(filaHtml).join("")}</tbody></table></div>
+        <div class="row"><button class="btn" data-act="add-fila">+ Agregar fila</button><span class="small muted">Tip: en la última fila, Enter agrega otra.</span></div>
+        <div id="cuadre">${cuadreHtml()}</div>
+        <button class="btn primary big" data-act="guardar-rec">Guardar en el inventario</button>
+      </section>
     </div>
-    ${d.texto ? `<details><summary style="cursor:pointer;font-weight:600">Ver y corregir el texto leído</summary>
-      <p class="small muted" style="margin:6px 0">Cada producto debe quedar en una línea: código, descripción, unidad, cantidad, precio e importe. Corrige lo que se leyó mal y toca el botón.</p>
-      <textarea id="ocr-texto" rows="12" style="font-family:var(--f-mono);font-size:.8rem">${esc(d.texto)}</textarea>
-      <button class="btn" data-act="reinterpretar" style="margin-top:8px">Volver a llenar los productos con este texto</button>
-    </details>` : ""}
-  </section>
-  <section class="card" id="paso2">
-    <h2>2. Datos de la boleta</h2>
-    <div class="grid2">
-      <label class="f">Proveedor<input data-h="proveedor" list="dlProv" value="${esc(d.proveedor)}" placeholder="Ej. Grupo Vega"></label>
-      <label class="f">Fecha<input type="date" data-h="fecha" value="${esc(d.fecha)}"></label>
-      <label class="f">N° de boleta<input data-h="documento" value="${esc(d.documento)}" placeholder="opcional"></label>
-      <label class="f">Total a pagar S/<input data-h="total" inputmode="decimal" value="${d.total || ""}"></label>
-    </div>
-    <datalist id="dlProv">${S.proveedores.map(p => `<option value="${esc(p.nombre)}">`).join("")}</datalist>
-    <div class="row">
-      <span class="seg" role="group" aria-label="Forma de pago"><button data-act="cond" data-v="contado" aria-pressed="${d.condicion==="contado"}">Contado</button><button data-act="cond" data-v="credito" aria-pressed="${d.condicion==="credito"}">Crédito</button></span>
-      ${d.condicion === "credito" ? `<label class="f" style="width:120px">Días<input data-h="dias" inputmode="numeric" value="${esc(d.dias)}"></label><span class="pill warn">Vence ${fecha(sumarDias(d.fecha || hoy(), toNum(d.dias)))}</span>` : ""}
-    </div>
-  </section>
-  <section class="card">
-    <div><h2>3. Productos recibidos</h2><p class="sub">Pon lo que <b>realmente llegó</b>. Lo que sale en 0.00 es <b style="color:var(--bonus)">bonificación</b>: entra al stock gratis y baja tu costo.</p></div>
-    <datalist id="dlLinea">${LINEAS.map(l => `<option value="${l}">`).join("")}</datalist>
-    ${d.grupos.map((g,gi) => vistaGrupo(g,gi)).join("")}
-    <div class="row"><button class="btn" data-act="add-grupo">+ Agregar producto</button></div>
-    <div id="cuadre">${cuadreHtml()}</div>
-    <button class="btn primary big" data-act="guardar-rec">Guardar en el inventario</button>
-  </section>`;
-}
-function vistaGrupo(g, gi){
-  const p = prod(g.productoId);
-  const dup = !p && g.nuevo.nombre ? parecidos(g.nuevo.nombre) : [];
-  const u = p ? uv(p) : g.nuevo.unidadVenta;
-  const recibidas = g.lineas.reduce((a,l) => a+toNum(l.cantidad)*toNum(l.factor), 0);
-  const falta = g.pedidoUnidades ? Math.max(0, g.pedidoUnidades - recibidas) : 0;
-  return `<div class="grupo ${dup.length ? "dup" : ""} ${falta ? "falta" : ""}">
-    <div class="row between">
-      <label class="f grow">Producto<select data-g="${gi}" data-gf="productoId"><option value="">＋ Producto nuevo</option>${S.productos.map(o => `<option value="${o.id}" ${o.id===g.productoId?"selected":""}>${esc(o.nombre)}</option>`).join("")}</select></label>
-      ${g.pedidoUnidades ? `<span class="pill ${falta ? "bad" : "ok"}">Pedido ${num(g.pedidoUnidades,1)} · ${falta ? "faltan "+num(falta,1) : "completo"}</span>` : p ? `<span class="pill tag">Se suma al stock</span>` : `<span class="pill warn">Nuevo</span>`}
-    </div>
-    ${!p ? `<div class="grid2">
-      <label class="f">Nombre<input data-g="${gi}" data-nf="nombre" value="${esc(g.nuevo.nombre)}"></label>
-      <label class="f">Marca<input data-g="${gi}" data-nf="marca" value="${esc(g.nuevo.marca)}"></label>
-      <label class="f">Línea<input data-g="${gi}" data-nf="linea" value="${esc(g.nuevo.linea)}" list="dlLinea"></label>
-      <label class="f">Lo vendo por<select data-g="${gi}" data-nf="unidadVenta">${UNIDADES.map(x => `<option ${x===g.nuevo.unidadVenta?"selected":""}>${x}</option>`).join("")}</select></label>
-    </div>` : ""}
-    ${dup.length ? `<div class="banner">Ya tienes <b>${esc(dup[0].nombre)}</b>. Si es el mismo, elígelo arriba para no duplicarlo.</div>` : ""}
-    ${!p && S.rec.grupos.length > 1 ? `<label class="f">¿Es el mismo producto que otro de esta boleta?<select data-g="${gi}" data-gf="juntar"><option value="">No, es distinto</option>${S.rec.grupos.map((o,oi) => oi === gi ? "" : `<option value="${oi}">Sí, juntar con: ${esc(prod(o.productoId)?.nombre || o.nuevo.nombre || "producto "+(oi+1))}</option>`).join("")}</select></label>` : ""}
-    ${g.lineas.map((l,li) => `<div class="linea">
-      ${l.descripcion ? `<div class="desc">${esc(l.descripcion)}</div>` : ""}
-      <label class="f">Llegó<input data-g="${gi}" data-l="${li}" data-lf="cantidad" inputmode="decimal" value="${esc(l.cantidad)}"></label>
-      <label class="f">Unidad<input data-g="${gi}" data-l="${li}" data-lf="unidadCompra" value="${esc(l.unidadCompra)}"></label>
-      <label class="f">Trae<input data-g="${gi}" data-l="${li}" data-lf="factor" inputmode="decimal" value="${esc(l.factor)}"></label>
-      <label class="f">Importe S/<input data-g="${gi}" data-l="${li}" data-lf="importe" inputmode="decimal" value="${esc(l.importe)}"></label>
-      <label class="f">¿Cómo llegó?<select data-g="${gi}" data-l="${li}" data-lf="observacion">${OBS.map(([v,t]) => `<option value="${v}" ${v===(l.observacion||"")?"selected":""}>${t}</option>`).join("")}</select></label>
-      <label class="bon"><input type="checkbox" data-g="${gi}" data-l="${li}" data-lf="bonificacion" ${l.bonificacion?"checked":""}> Bonif.</label>
-      <button class="btn sm" data-act="del-linea" data-g="${gi}" data-l="${li}" aria-label="Quitar línea">✕</button>
-    </div>`).join("")}
-    <div class="row between"><span class="small muted" id="u-${gi}">Entran ${num(recibidas,2)} ${esc(plural(u,recibidas))}</span><button class="btn sm" data-act="add-linea" data-g="${gi}">+ Otra línea</button></div>
   </div>`;
+}
+function filaHtml(f, i){
+  const p = porNombre(f.nombre);
+  const unidades = [...new Set([...UNIDADES_COMPRA, ...Object.keys(p?.presentaciones || {}), f.unidad].filter(Boolean))];
+  return `<tr class="${claseFila(f)}" id="fila-${i}">
+    <td class="prod" data-l="Producto"><input data-f="${i}" data-k="nombre" list="dlProd" value="${esc(f.nombre)}" placeholder="Escribe o elige" aria-label="Producto">
+      <div class="hint" id="hint-${i}">${hintFila(f, i)}</div></td>
+    ${S.rec.pedidoId ? `<td class="c" data-l="¿Llegó?">${f.desdePedido ? `<label class="row" style="gap:6px;justify-content:center"><input type="checkbox" data-f="${i}" data-k="llego" ${f.noLlego ? "" : "checked"}> <span class="small">${f.noLlego ? "No llegó" : "Sí"}</span></label><div class="hint muted">pedido ${num(f.pedidoUnidades,1)}</div>` : `<span class="small muted">extra</span>`}</td>` : ""}
+    <td data-l="Unidad"><select data-f="${i}" data-k="unidad" aria-label="Unidad">${unidades.map(x => `<option ${x===f.unidad?"selected":""}>${esc(x)}</option>`).join("")}</select></td>
+    <td class="n" data-l="Trae"><input data-f="${i}" data-k="factor" inputmode="decimal" value="${esc(f.factor)}" title="Unidades de venta en cada una" aria-label="Trae"></td>
+    <td class="n" data-l="Cantidad"><input data-f="${i}" data-k="cantidad" inputmode="decimal" value="${esc(f.cantidad)}" aria-label="Cantidad"></td>
+    <td class="n" data-l="Precio S/"><input data-f="${i}" data-k="precioUnit" inputmode="decimal" value="${esc(f.precioUnit)}" aria-label="Precio"></td>
+    <td class="n" data-l="Importe S/"><input data-f="${i}" data-k="importe" inputmode="decimal" value="${esc(f.importe)}" aria-label="Importe"></td>
+    <td data-l="Bonif." class="c"><input type="checkbox" data-f="${i}" data-k="bonificacion" ${f.bonificacion ? "checked" : ""} aria-label="Bonificación"></td>
+    <td data-l="¿Cómo llegó?"><select data-f="${i}" data-k="observacion" aria-label="Cómo llegó">${OBS.map(([v,t]) => `<option value="${v}" ${v===(f.observacion||"")?"selected":""}>${t}</option>`).join("")}</select></td>
+    <td class="c"><button class="btn sm" data-act="del-fila" data-i="${i}" aria-label="Quitar fila">✕</button></td></tr>`;
+}
+const entranProducto = nombre => S.rec.filas.filter(f => norm(f.nombre) === norm(nombre)).reduce((a,f) => a+toNum(f.cantidad)*toNum(f.factor), 0);
+const faltaFila = f => f.pedidoUnidades ? Math.max(0, f.pedidoUnidades - entranProducto(f.nombre)) : 0;
+const claseFila = f => [f.bonificacion ? "bon" : "", f.noLlego ? "nollego" : faltaFila(f) ? "falta" : ""].join(" ");
+function girarImagen(im){
+  const c = document.createElement("canvas"); c.width = im.naturalHeight; c.height = im.naturalWidth;
+  const x = c.getContext("2d"); x.translate(c.width, 0); x.rotate(Math.PI/2); x.drawImage(im, 0, 0);
+  return new Promise(ok => { const n = new Image(); n.onload = () => ok(n); n.src = c.toDataURL("image/jpeg", 0.92); });
+}
+function hintFila(f, i){
+  if(!f.nombre.trim()) return "";
+  const p = porNombre(f.nombre), entran = toNum(f.cantidad)*toNum(f.factor), falta = faltaFila(f);
+  const u = p ? plural(uv(p), entran) : (entran === 1 ? "unidad" : "unidades");
+  const base = `entran ${num(entran,2)} ${esc(u)}${falta ? ` · <b style="color:var(--bad)">faltan ${num(falta,1)}</b>` : ""}`;
+  if(p) return `<span class="muted">Ya en inventario · ${base}</span>`;
+  const dup = parecidos(f.nombre)[0];
+  return dup ? `<span style="color:var(--warn)">¿Es <button class="linkbtn" data-act="usar-nombre" data-i="${i}" data-n="${esc(dup.nombre)}">${esc(dup.nombre)}</button>? · ${base}</span>`
+    : `<span style="color:var(--warn)">Producto nuevo · ${base}</span>`;
+}
+function actualizarFila(i){
+  const f = S.rec.filas[i]; if(!f) return;
+  S.rec.filas.forEach((g, j) => { const tr = $(`#fila-${j}`); if(tr) tr.className = claseFila(g); const h = $(`#hint-${j}`); if(h) h.innerHTML = hintFila(g, j); });
+  $("#cuadre").innerHTML = cuadreHtml();
 }
 function cuadreHtml(){
   const d = S.rec; if(!d) return "";
-  const suma = d.grupos.reduce((a,g) => a+g.lineas.reduce((b,l) => b+toNum(l.importe),0), 0);
-  const total = toNum(d.total);
-  if(!total) return `<div class="cuadre bad">Los importes suman ${soles(suma)}. Escribe el total de la boleta para comprobarlo.</div>`;
+  const suma = d.filas.reduce((a,f) => a + (f.bonificacion ? 0 : toNum(f.importe)), 0);
+  const bon = d.filas.filter(f => f.bonificacion && f.nombre.trim()).length;
+  const total = toNum(d.total), extra = bon ? ` · ${bon} bonificación${bon===1?"":"es"}` : "";
+  if(!total) return `<div class="cuadre bad">Los importes suman ${soles(suma)}${extra}. Escribe el total de la boleta para comprobarlo.</div>`;
   const dif = Math.round((suma-total)*100)/100;
-  return dif === 0 ? `<div class="cuadre ok">✓ Cuadra: los importes suman ${soles(suma)}, igual que el total de la boleta.</div>`
+  return dif === 0 ? `<div class="cuadre ok">✓ Cuadra: los importes suman ${soles(suma)}, igual que el total de la boleta${extra}.</div>`
     : `<div class="cuadre bad">Los importes suman ${soles(suma)} y la boleta dice ${soles(total)} (diferencia ${soles(dif)}). Revisa cantidades e importes.</div>`;
 }
-const lineaVacia = () => ({descripcion:"", cantidad:1, unidadCompra:"UN", factor:1, precioUnit:0, importe:0, bonificacion:false, observacion:""});
-const grupoVacio = () => ({productoId:"", nuevo:{nombre:"", marca:"", linea:"", categoria:"", unidadVenta:"unidad"}, lineas:[lineaVacia()], pedidoUnidades:0});
+const filaVacia = () => ({nombre:"", unidad:"UN", factor:1, cantidad:"", precioUnit:"", importe:"", bonificacion:false, observacion:"", descripcion:"", pedidoUnidades:0, importeManual:false});
 function nuevaRecepcion(pedidoId){
   const pe = S.pedidos.find(p => p.id === pedidoId);
   const pr = pe ? prov(pe.proveedor_id) : null;
   const d = {pedidoId: pe?.id || null, proveedor: pr?.nombre || "", fecha: hoy(), documento:"", total:0,
-    condicion: pr?.dias_credito ? "credito" : "contado", dias: pr?.dias_credito || 15, file:null, url:null, leyendo:false, leida:false, error:"", dudas:[], grupos:[]};
+    condicion: pr?.dias_credito ? "credito" : "contado", dias: pr?.dias_credito || 15, url:null, img:null, leyendo:false, leida:false, error:"", dudas:[], filas:[]};
   if(pe){
     avancePedido(pe).lineas.filter(l => l.pendiente > 0).forEach(l => {
-      const cant = l.pendiente / toNum(l.factor || 1);
-      d.grupos.push({productoId:l.producto_id, nuevo:grupoVacio().nuevo, pedidoUnidades:l.pendiente,
-        lineas:[{descripcion:"", cantidad:Math.round(cant*100)/100, unidadCompra:l.unidad_compra, factor:toNum(l.factor), precioUnit:toNum(l.precio_unit), importe:Math.round(cant*toNum(l.precio_unit)*100)/100, bonificacion:false, observacion:""}]});
+      const cant = Math.round(l.pendiente / toNum(l.factor || 1) * 100)/100, pu = toNum(l.precio_unit);
+      d.filas.push({...filaVacia(), nombre: prod(l.producto_id)?.nombre || "", unidad: l.unidad_compra, factor: toNum(l.factor), cantidad: cant, precioUnit: pu || "", importe: pu ? Math.round(cant*pu*100)/100 : "", pedidoUnidades: l.pendiente, desdePedido: true});
     });
   }
-  if(!d.grupos.length) d.grupos.push(grupoVacio());
+  if(!d.filas.length) d.filas.push(filaVacia(), filaVacia(), filaVacia());
   S.rec = d; ir("recibir");
+}
+function abrirZoom(){
+  S.zoomW = S.zoomW || 100;
+  $("#overlayRoot").innerHTML = `<div class="zoom" data-act="cerrar-zoom"><img src="${S.rec.url}" alt="Boleta ampliada" id="zoomImg" style="width:${S.zoomW}%"></div>
+    <div class="zoom-bar"><button class="btn" data-act="zoom-mas" aria-label="Acercar">＋</button><button class="btn" data-act="zoom-menos" aria-label="Alejar">−</button><button class="btn primary" data-act="cerrar-zoom">Cerrar</button></div>`;
 }
 
 // Lectura gratis en el propio equipo (OCR con Tesseract, sin cuentas ni cobros)
@@ -625,7 +687,7 @@ function numPE(s){
   s = /,\d{2}$/.test(s) && !/\.\d{2}$/.test(s) ? s.replace(/\./g,"").replace(",",".") : s.replace(/,/g,"");
   return toNum(s);
 }
-const UNI_RX = /^(UND|UNI|UN|U|CAJA|CJA|CJ|POTE|POT|PQT|PAQ|BOL|BOLSA|DOC|TIRA|PACK|PK|KG|LT|GLN|GAL|FARDO|DISP)$/;
+const UNI_RX = /^(UND|UNI|UN|U|CAJA|CJA|CJ|POTE|POT|PQT|PAQ|BOL|BOLSA|DOC|TIRA|PACK|PK|KG|LT|GLN|GAL|FARDO|DISP|SAC|SACO)$/;
 const nombreBonito = s => s.toLowerCase().replace(/(^|\s)\S/g, c => c.toUpperCase());
 // Convierte el texto leído en el mismo formato que usa el formulario de revisión
 function interpretar(texto){
@@ -642,10 +704,14 @@ function interpretar(texto){
     const m = l.match(/^(\d{5,7})\s+(.*)$/);
     if(!m) continue;
     const tok = m[2].split(" "), nums = [];
-    while(tok.length && /^[\d.,O]+$/.test(tok[tok.length-1]) && nums.length < 3) nums.unshift(tok.pop());
+    // Formato "código cantidad unidad descripción precio importe" (ej. Dixon)
+    let cantIni = null, uniIni = null;
+    if(/^[\d.,]+$/.test(tok[0] || "") && UNI_RX.test((tok[1] || "").toUpperCase())){ cantIni = tok.shift(); uniIni = tok.shift().toUpperCase(); }
+    while(tok.length && /^[\d.,O]+$/.test(tok[tok.length-1]) && nums.length < (cantIni ? 2 : 3)) nums.unshift(tok.pop());
+    if(cantIni){ nums.unshift(cantIni); if(nums.length === 3) tok.push(uniIni); }
     if(nums.length < 2){ r.dudas.push(`no pude leer los números de "${l.slice(0,40)}"`); continue; }
     let unidad = "UN"; if(tok.length && UNI_RX.test(tok[tok.length-1].toUpperCase())) unidad = tok.pop().toUpperCase();
-    unidad = unidad.replace(/^(CJ|CJA)$/,"CAJA").replace(/^(UNI|U)$/,"UN").replace(/^POT$/,"POTE");
+    unidad = unidad.replace(/^(CJ|CJA)$/,"CAJA").replace(/^(UNI|U)$/,"UN").replace(/^POT$/,"POTE").replace(/^SAC$/,"SACO");
     const desc = tok.join(" ");
     let cant, pu, imp;
     if(nums.length === 3) [cant, pu, imp] = nums.map(numPE); else { cant = numPE(nums[0]); imp = numPE(nums[1]); pu = cant ? imp/cant : 0; }
@@ -677,70 +743,62 @@ async function leerBoleta(){
   finally{ d.leyendo = false; render(); }
 }
 const porAliasParecido = desc => S.productos.find(p => [p.nombre, ...(p.alias||[])].some(a => parecido(a, desc) >= 0.8));
+// Pasa lo leído de la foto al cuadro: llena las filas del pedido que coinciden y agrega las demás
 function aplicarLectura(r){
   const d = S.rec;
   if(r.proveedor && !d.pedidoId) d.proveedor = (S.proveedores.find(p => parecido(p.nombre, r.proveedor) >= 0.6)?.nombre) || r.proveedor;
-  d.ruc = r.ruc || "";
+  d.ruc = r.ruc || d.ruc || "";
   if(/^\d{4}-\d{2}-\d{2}$/.test(r.fecha || "")) d.fecha = r.fecha;
   d.documento = r.documento || d.documento; d.total = toNum(r.total) || d.total;
   if(r.condicion === "credito"){ d.condicion = "credito"; if(toNum(r.dias_credito) > 0) d.dias = toNum(r.dias_credito); }
   else if(r.condicion === "contado") d.condicion = "contado";
   d.dudas = Array.isArray(r.dudas) ? r.dudas.slice(0,6) : [];
   if(!(r.items || []).length) return;
-  // Del pedido quedan los grupos; la boleta reemplaza sus líneas y agrega lo que no se pidió
-  const base = d.grupos.filter(g => g.pedidoUnidades);
-  base.forEach(g => g.lineas = []);
-  const porClave = new Map(); base.forEach(g => porClave.set("p:"+g.productoId, g));
-  const nuevos = [];
-  for(const it of (r.items || [])){
+  const filas = d.filas.filter(f => f.desdePedido);
+  filas.forEach(f => f.llenada = false);
+  for(const it of r.items){
     const desc = String(it.descripcion || "").trim();
-    const ex = S.productos.find(p => p.id === it.productoKey) || porAlias(desc) || porAliasParecido(desc);
-    const clave = ex ? "p:"+ex.id : "k:"+(it.productoKey || norm(desc)), cd = "d:"+norm(desc);
-    let g = porClave.get(clave) || porClave.get(cd);
-    if(!g){ const nv = it.nuevo || {};
-      g = {productoId: ex?.id || "", pedidoUnidades:0, lineas:[], nuevo:{nombre: nv.nombre || desc, marca: nv.marca || "", linea: nv.linea || "", categoria: nv.categoria || "", unidadVenta: UNIDADES.includes(nv.unidadVenta) ? nv.unidadVenta : "unidad"}};
-      nuevos.push(g); }
-    porClave.set(clave, g); porClave.set(cd, g);
+    const ex = porAlias(desc) || porAliasParecido(desc);
+    const nombre = ex?.nombre || it.nuevo?.nombre || nombreBonito(desc);
     const uc = String(it.unidadCompra || "UN").toUpperCase().trim();
-    const factor = (ex?.presentaciones?.[uc]) || toNum(it.factor) || 1, importe = toNum(it.importe);
-    g.lineas.push({descripcion:desc, cantidad: toNum(it.cantidad) || 1, unidadCompra:uc, factor, precioUnit: toNum(it.precioUnit), importe, bonificacion: !!it.bonificacion || importe === 0, observacion:""});
+    const datos = {nombre, unidad:uc, factor: ex?.presentaciones?.[uc] || toNum(it.factor) || 1, cantidad: toNum(it.cantidad) || 1, precioUnit: toNum(it.precioUnit), importe: toNum(it.importe), bonificacion: !!it.bonificacion, descripcion: desc, importeManual: true};
+    const delPedido = filas.find(f => !f.llenada && norm(f.nombre) === norm(nombre));
+    if(delPedido) Object.assign(delPedido, datos, {llenada:true}); else filas.push({...filaVacia(), ...datos});
   }
-  base.forEach(g => { if(!g.lineas.length){ const l = lineaVacia(); l.cantidad = 0; l.importe = 0; l.observacion = "faltó"; g.lineas.push(l); } });
-  d.grupos = [...base, ...nuevos];
-  if(!d.grupos.length) d.grupos.push(grupoVacio());
+  filas.filter(f => f.desdePedido && !f.llenada).forEach(f => { f.cantidad = 0; f.importe = 0; f.observacion = "faltó"; });
+  d.filas = filas.length ? filas : [filaVacia()];
 }
 
 async function guardarRecepcion(btn){
-  const d = S.rec;
+  const d = S.rec, filas = d.filas.filter(f => f.nombre.trim());
   if(!d.proveedor.trim()){ toast("Escribe el proveedor."); return; }
-  for(const g of d.grupos){
-    if(!g.productoId && !g.nuevo.nombre.trim()){ toast("Falta el nombre de un producto nuevo."); return; }
-    for(const l of g.lineas) if(toNum(l.cantidad) < 0 || !(toNum(l.factor) > 0)){ toast("Revisa cantidades y el campo Trae."); return; }
-  }
+  if(!filas.length){ toast("Agrega al menos un producto."); return; }
+  if(filas.some(f => toNum(f.cantidad) < 0 || !(toNum(f.factor) > 0))){ toast("Revisa las cantidades y el campo Trae."); return; }
   btn.disabled = true; btn.innerHTML = `<span class="spin"></span> Guardando…`;
   try{
     let pr = S.proveedores.find(p => norm(p.nombre) === norm(d.proveedor));
     if(!pr) [pr] = await insertar("proveedores", {nombre:d.proveedor.trim(), ruc:d.ruc || null, dias_credito: d.condicion === "credito" ? toNum(d.dias) : 0});
     else if(d.condicion === "credito" && toNum(d.dias) && toNum(d.dias) !== pr.dias_credito) await actualizar("proveedores", pr.id, {dias_credito: toNum(d.dias)});
-    const nuevos = new Map(), items = [];
-    for(const g of d.grupos){
-      const pres = {}, alias = new Set();
-      g.lineas.forEach(l => { pres[String(l.unidadCompra||"UN").toUpperCase().trim()] = toNum(l.factor); if(l.descripcion) alias.add(norm(l.descripcion)); });
-      let id = g.productoId;
-      if(!id){
-        const n = norm(g.nuevo.nombre), ya = porNombre(g.nuevo.nombre);
-        if(ya) id = ya.id; else if(nuevos.has(n)) id = nuevos.get(n);
-        else { const [p] = await insertar("productos", {nombre:g.nuevo.nombre.trim(), marca:g.nuevo.marca.trim() || null, linea:g.nuevo.linea.trim() || null, categoria:g.nuevo.categoria?.trim() || null, unidad_venta:g.nuevo.unidadVenta, presentaciones:pres, alias:[...alias]}); id = p.id; nuevos.set(n, id); }
-      }
-      if(!nuevos.has(norm(g.nuevo.nombre)) || g.productoId){ const p = prod(id); if(p) await actualizar("productos", id, {presentaciones:{...(p.presentaciones||{}), ...pres}, alias:[...new Set([...(p.alias||[]), ...alias])]}); }
-      g.lineas.forEach(l => { const c = toNum(l.cantidad); if(c > 0 || l.observacion) items.push({producto_id:id, descripcion:l.descripcion || null, cantidad:c, unidad_compra:String(l.unidadCompra||"UN").toUpperCase().trim(), factor:toNum(l.factor), unidades:c*toNum(l.factor), precio_unit: toNum(l.precioUnit) || (c ? toNum(l.importe)/c : 0), importe:toNum(l.importe), bonificacion:!!l.bonificacion, observacion:l.observacion || null}); });
+    // Las filas con el mismo nombre son un solo producto
+    const grupos = new Map();
+    filas.forEach(f => { const k = norm(f.nombre); if(!grupos.has(k)) grupos.set(k, []); grupos.get(k).push(f); });
+    const items = [];
+    for(const fs of grupos.values()){
+      const pres = {}; fs.forEach(f => pres[String(f.unidad || "UN").toUpperCase()] = toNum(f.factor));
+      const alias = [...new Set(fs.map(f => norm(f.descripcion)).filter(Boolean))];
+      let p = porNombre(fs[0].nombre);
+      if(!p) [p] = await insertar("productos", {nombre: fs[0].nombre.trim(), presentaciones: pres, alias});
+      else await actualizar("productos", p.id, {presentaciones: {...(p.presentaciones || {}), ...pres}, alias: [...new Set([...(p.alias || []), ...alias])]});
+      fs.forEach(f => { const c = toNum(f.cantidad); if(c > 0 || f.observacion) items.push({producto_id:p.id, descripcion:f.descripcion || null, cantidad:c,
+        unidad_compra:String(f.unidad || "UN").toUpperCase(), factor:toNum(f.factor), unidades:c*toNum(f.factor), precio_unit:toNum(f.precioUnit),
+        importe: f.bonificacion ? 0 : toNum(f.importe), bonificacion: !!f.bonificacion, observacion: f.observacion || null}); });
     }
     const total = toNum(d.total) || items.reduce((a,i) => a+i.importe, 0);
     const [rec] = await insertar("recepciones", {pedido_id:d.pedidoId, proveedor_id:pr.id, fecha:d.fecha || hoy(), documento:d.documento.trim() || null, total, condicion:d.condicion, dias_credito: d.condicion === "credito" ? toNum(d.dias) : null, vence: d.condicion === "credito" ? sumarDias(d.fecha || hoy(), toNum(d.dias)) : null, origen: d.leida ? "foto" : "manual"});
     if(items.length) await insertar("recepcion_items", items.map(i => ({...i, recepcion_id:rec.id})));
     if(d.pedidoId){ await cargar(); const pe = S.pedidos.find(p => p.id === d.pedidoId); if(pe){ const a = avancePedido(pe); await actualizar("pedidos", pe.id, {estado: a.lineas.every(l => l.pendiente <= 0) ? "recibido" : "parcial"}); } }
     S.rec = null; await refrescar(true); ir("inicio");
-    toast(`Mercadería guardada: ${items.length} línea${items.length===1?"":"s"}.${d.condicion==="credito" ? " Crédito anotado." : ""}`);
+    toast(`Mercadería guardada: ${grupos.size} producto${grupos.size===1?"":"s"}.${d.condicion==="credito" ? " Crédito anotado." : ""}`);
   }catch(e){ btn.disabled = false; btn.textContent = "Guardar en el inventario"; toast("No se pudo guardar: " + (e.message || "revisa tu conexión")); }
 }
 
@@ -762,8 +820,7 @@ function renderFicha(){
     <div class="row">${pill(c.estado)}${c.sugerido ? `<span class="pill tag">Pedir ${c.sugerido.cant} ${esc(c.sugerido.unidad.toLowerCase())}</span>` : ""}</div>
     <div class="stats">
       <div class="stat"><div class="lab">Stock ahora</div><div class="val">${num(c.stock,2)}</div><div class="note">${esc(plural(uv(p),c.stock))}</div></div>
-      <div class="stat"><div class="lab">Vendido hoy</div><div class="val">${num(c.vendidoHoy,2)}</div><div class="note">${c.consumo !== null ? "promedio "+num(c.consumo,1)+"/día" : "sin ventas aún"}</div></div>
-      <div class="stat"><div class="lab">Alcanza para</div><div class="val">${cobTxt(c)}</div><div class="note">${c.cobertura !== null ? "hasta el "+fecha(sumarDias(hoy(), Math.floor(c.cobertura))) : ""}</div></div>
+      <div class="stat"><div class="lab">Valor en stock</div><div class="val">${soles(c.valor)}</div><div class="note">${c.bon ? num(c.bon,0)+" recibidas gratis" : "sin bonificaciones"}</div></div>
       <div class="stat"><div class="lab">Costo real</div><div class="val">${c.costo !== null ? soles(c.costo) : "—"}</div><div class="note">con bonificaciones</div></div>
     </div>
     <section class="card"><div><h2>Conteo físico</h2><p class="sub">Si al contar hay diferencia, corrige el stock. Queda registrado.</p></div>
@@ -885,23 +942,26 @@ document.addEventListener("click", async e => {
     }
     else if(a === "anular-venta"){ if(t.dataset.ok !== "1"){ t.dataset.ok = "1"; t.textContent = "¿Seguro?"; return; } await borrar("ventas", id); await refrescar(true); toast("Venta anulada."); }
     // Pedidos
-    else if(a === "nuevo-pedido"){ S.pedido = {proveedor:"", entrega: sumarDias(hoy(),1), lineas:[{nombre:"", cantidad:1, unidad:"CAJA", factor:1}]}; ir("pedidos"); }
-    else if(a === "add-pl"){ S.pedido.lineas.push({nombre:"", cantidad:1, unidad:"CAJA", factor:1}); render(); }
-    else if(a === "del-pl"){ S.pedido.lineas.splice(+t.dataset.i, 1); if(!S.pedido.lineas.length) S.pedido.lineas.push({nombre:"", cantidad:1, unidad:"CAJA", factor:1}); render(); }
+    else if(a === "nuevo-pedido"){ S.pedido = {proveedor:"", entrega: sumarDias(hoy(),1), lineas:[{nombre:"", cantidad:1, unidad:"CAJA", factor:1, precio:""}]}; ir("pedidos"); }
+    else if(a === "add-pl"){ S.pedido.lineas.push({nombre:"", cantidad:1, unidad:"CAJA", factor:1, precio:""}); render(); }
+    else if(a === "del-pl"){ S.pedido.lineas.splice(+t.dataset.i, 1); if(!S.pedido.lineas.length) S.pedido.lineas.push({nombre:"", cantidad:1, unidad:"CAJA", factor:1, precio:""}); render(); }
     else if(a === "cancelar-pedido-form"){ S.pedido = null; render(); }
     else if(a === "guardar-pedido") await guardarPedido(t);
     else if(a === "cerrar-pedido"){ if(t.dataset.ok !== "1"){ t.dataset.ok = "1"; t.textContent = "Confirmar"; return; } await actualizar("pedidos", id, {estado:"cerrado"}); await refrescar(true); toast("Pedido cerrado."); }
-    else if(a === "recibir-pedido") nuevaRecepcion(id);
+    else if(a === "recibir-pedido"){ nuevaRecepcion(id); S.rec.modo = t.dataset.modo || "completo"; render(); }
     // Recibir
     else if(a === "recibir-directo") nuevaRecepcion(null);
     else if(a === "descartar-rec"){ S.rec = null; render(); }
     else if(a === "leer") leerBoleta();
     else if(a === "cond"){ S.rec.condicion = t.dataset.v; render(); }
-    else if(a === "add-grupo"){ S.rec.grupos.push(grupoVacio()); render(); }
-    else if(a === "add-linea"){ S.rec.grupos[+t.dataset.g].lineas.push(lineaVacia()); render(); }
-    else if(a === "del-linea"){ const g = S.rec.grupos[+t.dataset.g]; g.lineas.splice(+t.dataset.l, 1); if(!g.lineas.length && !g.pedidoUnidades) S.rec.grupos.splice(+t.dataset.g, 1); if(!S.rec.grupos.length) S.rec.grupos.push(grupoVacio()); render(); }
+    else if(a === "add-fila"){ S.rec.filas.push(filaVacia()); render(); $(`[data-f="${S.rec.filas.length-1}"][data-k="nombre"]`)?.focus(); }
+    else if(a === "del-fila"){ S.rec.filas.splice(+t.dataset.i, 1); if(!S.rec.filas.length) S.rec.filas.push(filaVacia()); render(); }
+    else if(a === "usar-nombre"){ e.preventDefault(); const f = S.rec.filas[+t.dataset.i]; f.nombre = t.dataset.n; const p = porNombre(f.nombre); if(p?.presentaciones?.[f.unidad]) f.factor = p.presentaciones[f.unidad]; render(); }
     else if(a === "guardar-rec") await guardarRecepcion(t);
-    else if(a === "reinterpretar"){ const r = interpretar(S.rec.texto || ""); aplicarLectura(r); render(); toast(r.items.length ? `Productos actualizados: ${r.items.length} líneas.` : "No encontré líneas de productos en el texto."); }
+    else if(a === "zoom") abrirZoom();
+    else if(a === "cerrar-zoom"){ if(e.target === t || t.tagName === "BUTTON") $("#overlayRoot").innerHTML = ""; }
+    else if(a === "zoom-mas" || a === "zoom-menos"){ S.zoomW = Math.max(100, Math.min(400, (S.zoomW || 100) + (a === "zoom-mas" ? 50 : -50))); $("#zoomImg").style.width = S.zoomW + "%"; }
+    else if(a === "girar"){ S.rec.img = await girarImagen(S.rec.img); S.rec.url = S.rec.img.src; render(); }
     // Borrar pruebas
     else if(a === "borrar-rec"){ if(!await confirmar(t, "¿Seguro? Tocar otra vez")) return; t.disabled = true; await borrar("recepciones", id); await limpiarHuerfanos(); await refrescar(true); toast("Boleta borrada. El stock se recalculó."); }
     else if(a === "borrar-dia"){ if(!await confirmar(t, "¿Borrar todo el día? Tocar otra vez")) return; t.disabled = true; await api(`recepciones?fecha=eq.${t.dataset.f}`, {method:"DELETE"}); await limpiarHuerfanos(); await refrescar(true); toast(`Compras del ${fecha(t.dataset.f)} borradas.`); }
@@ -962,20 +1022,18 @@ document.addEventListener("input", e => {
   if(t.id === "f-q"){ S.f.q = t.value; const pos = t.selectionStart; render(); const n = $("#f-q"); n.focus(); n.setSelectionRange(pos,pos); return; }
   if(t.id === "v-q"){ S.venta.q = t.value; $("#tiles").innerHTML = tilesVenta(); return; }
   if(t.id === "v-cant" || t.id === "v-precio"){ S.venta[t.id === "v-cant" ? "cant" : "precio"] = t.value; $("#v-total").textContent = soles(toNum(S.venta.cant)*toNum(S.venta.precio)); return; }
-  if(t.id === "ocr-texto"){ if(S.rec) S.rec.texto = t.value; return; }
+  if(t.dataset.f !== undefined && S.rec){
+    const i = +t.dataset.f, f = S.rec.filas[i], k = t.dataset.k; if(!f || t.type === "checkbox" || t.tagName === "SELECT") return;
+    f[k] = t.value;
+    const imp = $(`[data-f="${i}"][data-k="importe"]`);
+    if(k === "importe"){ f.importeManual = t.value.trim() !== ""; if(t.value.trim() !== "" && toNum(t.value) === 0 && toNum(f.cantidad) > 0){ f.bonificacion = true; const cb = $(`[data-f="${i}"][data-k="bonificacion"]`); if(cb) cb.checked = true; } }
+    if((k === "cantidad" || k === "precioUnit") && !f.importeManual && !f.bonificacion){ f.importe = Math.round(toNum(f.cantidad)*toNum(f.precioUnit)*100)/100 || ""; if(imp) imp.value = f.importe; }
+    actualizarFila(i); return;
+  }
   if(t.dataset.pf){ S.pedido[t.dataset.pf] = t.value; return; }
   if(t.dataset.pl !== undefined){ S.pedido.lineas[+t.dataset.pl][t.dataset.k] = t.value; if(t.dataset.k === "nombre"){ const p = porNombre(t.value); if(p){ const big = Object.entries(p.presentaciones||{}).sort((a,b) => b[1]-a[1])[0]; if(big){ S.pedido.lineas[+t.dataset.pl].unidad = big[0]; S.pedido.lineas[+t.dataset.pl].factor = big[1]; } } } return; }
   const d = S.rec; if(!d) return;
   if(t.dataset.h){ d[t.dataset.h] = t.value; if(t.dataset.h === "total") $("#cuadre").innerHTML = cuadreHtml(); return; }
-  if(t.dataset.g === undefined) return;
-  const g = d.grupos[+t.dataset.g]; if(!g) return;
-  if(t.dataset.nf && t.tagName !== "SELECT"){ g.nuevo[t.dataset.nf] = t.value; return; }
-  if(t.dataset.lf && t.type !== "checkbox" && t.tagName !== "SELECT"){
-    g.lineas[+t.dataset.l][t.dataset.lf] = t.value;
-    const p = prod(g.productoId), u = p ? uv(p) : g.nuevo.unidadVenta, rec = g.lineas.reduce((a,l) => a+toNum(l.cantidad)*toNum(l.factor), 0);
-    const el = $(`#u-${t.dataset.g}`); if(el) el.textContent = `Entran ${num(rec,2)} ${plural(u,rec)}`;
-    if(t.dataset.lf === "importe") $("#cuadre").innerHTML = cuadreHtml();
-  }
 });
 document.addEventListener("change", async e => {
   const t = e.target;
@@ -983,19 +1041,30 @@ document.addEventListener("change", async e => {
   if(t.dataset.pl !== undefined && t.dataset.k === "nombre"){ render(); return; }
   if(t.dataset.pf === "proveedor") return;
   if(t.id === "foto" && t.files?.[0]){
-    try{ const {im, url} = await cargarImagen(t.files[0]); Object.assign(S.rec, {img:im, url, error:"", leida:false}); render(); leerBoleta(); }
+    try{ const {im, url} = await cargarImagen(t.files[0]); Object.assign(S.rec, {img:im, url, error:"", leida:false}); render(); }
     catch{ S.rec.error = "No pude abrir esa imagen. Prueba con otra foto."; render(); }
     return;
   }
-  const d = S.rec; if(!d || t.dataset.g === undefined) return;
-  const g = d.grupos[+t.dataset.g]; if(!g) return;
-  if(t.dataset.gf === "juntar"){ if(t.value === "") return; const gi = +t.dataset.g, dest = d.grupos[+t.value];
-    dest.lineas.push(...g.lineas); dest.pedidoUnidades = dest.pedidoUnidades || g.pedidoUnidades; d.grupos.splice(gi, 1); render(); toast("Líneas juntadas en un solo producto."); }
-  else if(t.dataset.gf === "productoId"){ g.productoId = t.value; const p = prod(t.value); if(p) g.lineas.forEach(l => { const f = p.presentaciones?.[String(l.unidadCompra).toUpperCase().trim()]; if(f) l.factor = f; }); render(); }
-  else if(t.dataset.nf === "nombre") render();
-  else if(t.dataset.nf){ g.nuevo[t.dataset.nf] = t.value; render(); }
-  else if(t.dataset.lf === "bonificacion") g.lineas[+t.dataset.l].bonificacion = t.checked;
-  else if(t.dataset.lf === "observacion"){ g.lineas[+t.dataset.l].observacion = t.value; }
+  if(t.dataset.f === undefined || !S.rec) return;
+  const i = +t.dataset.f, f = S.rec.filas[i], k = t.dataset.k; if(!f) return;
+  const imp = $(`[data-f="${i}"][data-k="importe"]`);
+  if(k === "llego"){
+    f.noLlego = !t.checked;
+    if(f.noLlego){ f.guardado = {cantidad:f.cantidad, importe:f.importe}; f.cantidad = 0; f.importe = 0; f.observacion = "faltó"; }
+    else { Object.assign(f, f.guardado || {}); if(f.observacion === "faltó") f.observacion = ""; }
+    render();
+  }
+  else if(k === "bonificacion"){ f.bonificacion = t.checked; if(t.checked) f.importe = 0; else { f.importeManual = false; f.importe = Math.round(toNum(f.cantidad)*toNum(f.precioUnit)*100)/100 || ""; } if(imp) imp.value = f.importe; actualizarFila(i); }
+  else if(k === "observacion") f.observacion = t.value;
+  else if(k === "unidad"){ f.unidad = t.value; const p = porNombre(f.nombre), fac = p?.presentaciones?.[t.value]; if(fac) f.factor = fac; else if(t.value === "UN") f.factor = 1; render(); }
+  else if(k === "nombre"){ const p = porNombre(f.nombre); if(p){ f.nombre = p.nombre; const fac = p.presentaciones?.[f.unidad]; if(fac) f.factor = fac; } render(); }
+});
+document.addEventListener("keydown", e => {
+  if(e.key !== "Enter" || !e.target.matches?.("table.boleta input")) return;
+  e.preventDefault();
+  const i = +e.target.dataset.f;
+  if(i === S.rec.filas.length - 1){ S.rec.filas.push(filaVacia()); render(); }
+  $(`[data-f="${i+1}"][data-k="nombre"]`)?.focus();
 });
 
 async function guardarPedido(btn){
@@ -1009,7 +1078,7 @@ async function guardarPedido(btn){
   for(const l of lineas){
     let p = porNombre(l.nombre);
     if(!p){ [p] = await insertar("productos", {nombre:l.nombre.trim(), presentaciones:{[String(l.unidad||"UN").toUpperCase()]: toNum(l.factor) || 1}}); S.productos.push(p); }
-    items.push({producto_id:p.id, cantidad:toNum(l.cantidad), unidad_compra:String(l.unidad||"UN").toUpperCase().trim(), factor:toNum(l.factor) || 1});
+    items.push({producto_id:p.id, cantidad:toNum(l.cantidad), unidad_compra:String(l.unidad||"UN").toUpperCase().trim(), factor:toNum(l.factor) || 1, precio_unit: toNum(l.precio) || null});
   }
   const [pe] = await insertar("pedidos", {proveedor_id:pr.id, entrega:d.entrega || null});
   await insertar("pedido_items", items.map(i => ({...i, pedido_id:pe.id})));
