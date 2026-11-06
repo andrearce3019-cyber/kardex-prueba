@@ -193,6 +193,47 @@ table th{background:var(--soft)}
 table th:first-child{border-top-left-radius:8px}table th:last-child{border-top-right-radius:8px}
 .login .card,.login{box-shadow:var(--shadow)}
 nav.bottom button[aria-current="true"] svg{stroke-width:2.4}
+/* Menú lateral en computadora */
+nav.tabs button{display:inline-flex;align-items:center;gap:8px}
+nav.tabs button svg{width:18px;height:18px;flex:none;opacity:.9}
+@media (min-width:1000px){
+  header{position:fixed;inset:0 auto 0 0;width:256px;overflow-y:auto;background:linear-gradient(180deg,#0B3B33 0%,#082C26 100%)}
+  header .wrap{padding:22px 14px;max-width:none;display:flex;flex-direction:column;gap:22px;min-height:100%}
+  header .top{flex-direction:column;align-items:stretch;padding:0 6px;gap:16px}
+  header .brand{font-size:1.6rem;flex-direction:column;align-items:flex-start;gap:4px}
+  #btnVenderTop{width:100%;min-height:44px}
+  nav.tabs{flex-direction:column;overflow:visible;gap:3px;padding:0}
+  nav.tabs button{display:flex;width:100%;box-sizing:border-box;border-radius:10px;padding:11px 12px;font-size:.95rem}
+  nav.tabs button[data-go="pruebas"]{margin-top:14px;color:rgba(255,200,190,.85)}
+  main.wrap{margin-left:256px;max-width:1180px;padding-left:40px;padding-right:40px;padding-block:32px 64px}
+  body::before{display:none}
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) header{background:linear-gradient(180deg,#0A2722 0%,#071C18 100%)}}
+:root[data-theme="dark"] header{background:linear-gradient(180deg,#0A2722 0%,#071C18 100%)}
+/* Inicio vacío: pasos */
+.bienvenida{display:grid;gap:6px}
+.bienvenida h1{font-size:2rem}
+.pasos{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+@media (max-width:820px){.pasos{grid-template-columns:minmax(0,1fr)}}
+.paso{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:20px;display:grid;gap:10px;align-content:start;box-shadow:var(--shadow);position:relative;overflow:hidden}
+.paso .ico{width:46px;height:46px;border-radius:12px;display:grid;place-items:center;background:var(--accent-weak);color:var(--accent)}
+.paso .ico svg{width:24px;height:24px}
+.paso .n{position:absolute;top:12px;right:16px;font-family:var(--f-display);font-size:2.6rem;font-weight:700;color:var(--soft);line-height:1}
+.paso h3{font-size:1.08rem}
+.paso p{margin:0;color:var(--muted);font-size:.92rem}
+/* Confirmación tipo boleta */
+.overlay.centro{justify-content:center;align-items:center;padding:16px}
+.recibo{background:var(--surface);width:min(620px,100%);max-height:calc(100vh - 32px);overflow-y:auto;border-radius:18px;padding:0 0 18px;display:grid;gap:14px;box-shadow:0 20px 60px rgba(0,0,0,.35)}
+.recibo>*:not(.recibo-h){margin-inline:18px}
+.recibo-h{background:var(--brand);color:var(--brand-ink);padding:18px;display:grid;gap:4px;border-radius:18px 18px 0 0}
+.recibo-h h2{font-size:1.3rem}
+.recibo-t{display:flex;justify-content:space-between;align-items:baseline;border-top:2px dashed var(--line);padding-top:12px;font-weight:600}
+.recibo-t b{font-family:var(--f-display);font-size:1.5rem}
+/* Borrar pruebas */
+.grid-borrar{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;align-items:start}
+.fila-borrar{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--line)}
+.fila-borrar.dia{border-top:2px solid var(--line);margin-top:6px}
+.zona-peligro{border-color:var(--bad)}
 </style>
 </head>
 <body>
@@ -230,7 +271,7 @@ const S = {
   view: (location.hash || "#inicio").slice(1), f: {q:"", linea:"", marca:"", prov:""},
   venta: {q:"", sel:null, cant:1, precio:""}, pedido: null, rec: null, abierto: null
 };
-const VIEWS = ["inicio","pedidos","recibir","compras","inventario","creditos","proveedores","mas"];
+const VIEWS = ["inicio","pedidos","recibir","compras","inventario","creditos","proveedores","pruebas","mas"];
 if(!VIEWS.includes(S.view)) S.view = "inicio";
 
 // ---------- Utilidades ----------
@@ -349,11 +390,16 @@ const ICON = {
   vender:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path d="M2 3h3l2.5 12h11L21 7H6"/></svg>',
   pedidos:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h4"/></svg>',
   recibir:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7l9-4 9 4v10l-9 4-9-4z"/><path d="M3 7l9 4 9-4M12 11v10"/></svg>',
-  mas:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>'
+  mas:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>',
+  compras:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/></svg>',
+  creditos:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20M6 15h4"/></svg>',
+  inventario:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>',
+  proveedores:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 7h13v10H1zM14 10h4l3 3v4h-7"/><circle cx="5.5" cy="18" r="1.5"/><circle cx="17.5" cy="18" r="1.5"/></svg>',
+  pruebas:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 11v5M14 11v5"/></svg>'
 };
 function pintarNav(){
-  const tabs = [["inicio","Resumen de inventario"],["pedidos","Pedidos"],["recibir","Recibir mercadería"],["compras","Historial de compras"],["creditos","Créditos"],["mas","Más"]];
-  $("#tabs").innerHTML = tabs.map(([v,t]) => `<button data-go="${v}" aria-current="${S.view===v || (v==="mas" && ["inventario","proveedores"].includes(S.view))}">${t}</button>`).join("");
+  const tabs = [["inicio","Resumen de inventario"],["pedidos","Pedidos"],["recibir","Recibir mercadería"],["compras","Historial de compras"],["creditos","Créditos"],["inventario","Inventario valorizado"],["proveedores","Proveedores"],["pruebas","Borrar pruebas"]];
+  $("#tabs").innerHTML = tabs.map(([v,t]) => `<button data-go="${v}" aria-current="${S.view===v}">${ICON[v]}<span>${t}</span></button>`).join("");
   const enMas = ["inventario","creditos","proveedores","mas"].includes(S.view);
   $("#bottom").innerHTML = [["inicio","Resumen"],["pedidos","Pedidos"],["recibir","Recibir"],["compras","Historial"],["mas","Más"]]
     .map(([v,t]) => `<button data-go="${v}" aria-current="${v==="mas" ? enMas : S.view===v}">${ICON[v]}<span>${t}</span></button>`).join("");
@@ -367,7 +413,7 @@ function render(){
   if(!S.clave){ $("#tabs").innerHTML = ""; $("#bottom").innerHTML = ""; m.innerHTML = vistaLogin(); return; }
   pintarNav();
   if(!S.conectado){ m.innerHTML = `<div class="card empty"><span class="spin"></span><p>Cargando tu tienda…</p></div>`; return; }
-  const V = {inicio:vistaInicio, vender:vistaVender, pedidos:vistaPedidos, recibir:vistaRecibir, inventario:vistaInventario, compras:vistaCompras, creditos:vistaCreditos, proveedores:vistaProveedores, mas:vistaMas};
+  const V = {inicio:vistaInicio, vender:vistaVender, pedidos:vistaPedidos, recibir:vistaRecibir, inventario:vistaInventario, compras:vistaCompras, pruebas:vistaPruebas, creditos:vistaCreditos, proveedores:vistaProveedores, mas:vistaMas};
   m.innerHTML = V[S.view]();
 }
 
@@ -384,9 +430,12 @@ function vistaLogin(){
 
 // ----- Inicio -----
 function vistaInicio(){
-  if(!S.productos.length) return `<div><h1>Resumen de inventario</h1></div><div class="card empty"><h2>Tu inventario está vacío</h2>
-    <p>1. Anota tu <b>pedido</b> al proveedor. 2. Cuando llegue el reparto, ve a <b>Recibir mercadería</b> y marca si llegó completo. Tu stock se llena solo.</p>
-    <div class="row" style="justify-content:center"><button class="btn primary" data-act="nuevo-pedido">Hacer un pedido</button><button class="btn" data-go="recibir">Recibir mercadería</button></div></div>`;
+  if(!S.productos.length) return `<div class="bienvenida"><h1>Resumen de inventario</h1><p class="sub">Tu inventario está vacío. Así se llena, en tres pasos:</p></div>
+    <div class="pasos">
+      <div class="paso"><span class="n">1</span><span class="ico">${ICON.pedidos}</span><h3>Anota tu pedido</h3><p>Lo que le pediste al proveedor, con cantidad y precio, y el día en que llega.</p><button class="btn primary" data-act="nuevo-pedido">Hacer un pedido</button></div>
+      <div class="paso"><span class="n">2</span><span class="ico">${ICON.recibir}</span><h3>Recibe la mercadería</h3><p>Cuando llegue el reparto: <b>llegó completo</b> o <b>incompleto</b>. Sube la foto de la boleta y se llena sola.</p><button class="btn" data-go="recibir">Recibir mercadería</button></div>
+      <div class="paso"><span class="n">3</span><span class="ico">${ICON.inventario}</span><h3>Mira tu stock</h3><p>Aquí verás cuánto tienes de cada producto, cuánto vale y qué está por acabarse.</p></div>
+    </div>`;
   const C = new Map(S.productos.map(p => [p.id, calc(p)]));
   const recMes = S.recepciones.filter(r => (r.fecha || "").startsWith(hoy().slice(0,7)));
   const compradoMes = recMes.reduce((a,r) => a+toNum(r.total), 0);
@@ -508,7 +557,7 @@ function vistaPedidos(){
       <div class="tbl"><table><thead><tr><th>Producto</th><th class="r">Pedido</th><th class="r">Llegó</th><th class="r">Falta</th></tr></thead><tbody>
         ${a.lineas.map(l => { const p = prod(l.producto_id); return `<tr><td>${esc(p?.nombre || "—")}</td><td class="r">${num(l.cantidad,2)} ${esc(l.unidad_compra)}</td><td class="r">${num(l.unidadesRecibidas,1)}</td><td class="r" style="${l.pendiente?"color:var(--bad);font-weight:600":""}">${l.pendiente ? num(l.pendiente,1)+" "+esc(plural(uv(p),l.pendiente)) : "—"}</td></tr>`; }).join("")}
       </tbody></table></div>
-      ${["pendiente","parcial"].includes(pe.estado) ? `<div class="row"><button class="btn primary" data-act="recibir-pedido" data-id="${pe.id}">Recibir este pedido</button><button class="btn" data-act="cerrar-pedido" data-id="${pe.id}">${pe.estado==="parcial" ? "Ya no llegará lo que falta" : "Cancelar pedido"}</button></div>` : ""}
+      <div class="row">${["pendiente","parcial"].includes(pe.estado) ? `<button class="btn primary" data-act="recibir-pedido" data-id="${pe.id}" data-modo="completo">✓ Llegó completo</button><button class="btn" data-act="recibir-pedido" data-id="${pe.id}" data-modo="incompleto">Llegó incompleto</button><button class="btn" data-act="cerrar-pedido" data-id="${pe.id}">${pe.estado==="parcial" ? "Ya no llegará lo que falta" : "Cancelar pedido"}</button>` : ""}<button class="btn danger" data-act="borrar-pedido" data-id="${pe.id}">🗑 Borrar pedido</button></div>
     </details>`; };
   return `
   <div class="row between"><div><h1>Pedidos</h1><p class="sub">Lo que pediste al proveedor y aún no llega. Al recibirlo, marcas lo que llegó, lo que faltó o vino dañado.</p></div>
@@ -565,7 +614,8 @@ function vistaRecibir(){
       : `<p class="small muted" style="margin:0">Súbela para tenerla a la vista mientras llenas el cuadro.</p><label class="btn primary" for="foto">Tomar o subir foto</label>`}
       <input id="foto" type="file" accept="image/*" hidden>
       ${d.url ? (d.leyendo ? `<button class="btn" disabled><span class="spin"></span> <span id="ocr-prog">Leyendo…</span></button>`
-        : `<button class="btn" data-act="leer">Intentar llenar el cuadro con la foto</button><p class="small muted" style="margin:0">Es gratis pero falla con letra matricial: revisa cada fila.</p>`) : ""}
+        : `<button class="btn primary" data-act="leer">${d.leida ? "Leer otra vez" : "✨ Leer boleta y llenar el cuadro"}</button><p class="small muted" style="margin:0">Se lee con inteligencia artificial gratis. Revisa el cuadro antes de guardar.</p>`) : ""}
+      ${d.dudas?.length ? `<div class="banner">Revisa: ${d.dudas.map(esc).join(" · ")}</div>` : ""}
       ${d.error ? `<div class="banner bad">${d.error}</div>` : ""}
     </aside>
     <div style="display:grid;gap:16px;min-width:0">
@@ -728,19 +778,56 @@ async function leerBoleta(){
   const d = S.rec; if(!d?.img) return;
   d.leyendo = true; d.error = ""; render();
   try{
-    await cargarTesseract();
-    const w = await Tesseract.createWorker("spa", 1, {logger: m => { const el = $("#ocr-prog"); if(el && m.status === "recognizing text") el.textContent = `Leyendo la boleta… ${Math.round(m.progress*100)}%`; }});
-    await w.setParameters({tessedit_pageseg_mode: "4", preserve_interword_spaces: "1"});
-    const {data} = await w.recognize(prepararOCR(d.img));
-    await w.terminate();
-    d.texto = data.text || "";
-    const r = interpretar(d.texto);
-    aplicarLectura(r);
+    const imagenes = [recorte(d.img,0,1), recorte(d.img,0,0.58), recorte(d.img,0.42,1)];
+    const productos = S.productos.map(p => ({nombre:p.nombre, marca:p.marca, presentaciones:p.presentaciones}));
+    const r = await fetch(`${SB_URL}/functions/v1/leer-boleta`, {method:"POST", headers:{apikey:SB_KEY, "Content-Type":"application/json", "x-clave-tienda":S.clave}, body: JSON.stringify({imagenes, productos})});
+    const res = await r.json().catch(() => ({error:"conexion"}));
+    if(!r.ok || res.error) throw res;
+    aplicarLectura(res);
     d.leida = true;
-    toast(r.items.length ? `Leí ${r.items.length} líneas. Revisa cada una y corrige lo que haga falta.` : "No encontré líneas de productos. Corrige el texto leído o llénalas a mano.");
+    toast(`Leí ${res.items?.length || 0} líneas${res.revisada ? " (revisadas dos veces)" : ""}. Revisa el cuadro y guarda.`);
     setTimeout(() => $("#paso2")?.scrollIntoView({behavior:"smooth"}), 60);
-  }catch(e){ d.error = "No se pudo leer la foto. La primera vez el lector se descarga: revisa tu internet e intenta de nuevo, o llena los productos a mano."; }
-  finally{ d.leyendo = false; render(); }
+  }catch(e){
+    d.error = ({
+      falta_api_key:"La lectura todavía no está activada: falta pegar la clave gratuita de Gemini en Supabase. Mientras tanto, llena el cuadro a mano.",
+      api_key_invalida:"La clave de Gemini no es válida. Revisa que la hayas copiado completa.",
+      limite:"Se alcanzó el límite gratuito de lecturas por ahora. Espera un minuto e intenta otra vez.",
+      no_json:"No pude entender la boleta. Toma la foto más de cerca, completa y con buena luz.",
+      clave:"La clave de la tienda no es válida. Vuelve a entrar."
+    })[e?.error] || "No se pudo leer la boleta por un problema de conexión. Intenta de nuevo.";
+  }finally{ d.leyendo = false; render(); }
+}
+// Recorta y achica la foto para enviarla (completa y dos acercamientos)
+function recorte(im, y0, y1, lado = 1600){
+  const sw = im.naturalWidth, sh = Math.round(im.naturalHeight*(y1-y0)), sy = Math.round(im.naturalHeight*y0);
+  const k = Math.min(1, lado/Math.max(sw, sh)), c = document.createElement("canvas");
+  c.width = Math.round(sw*k); c.height = Math.round(sh*k);
+  c.getContext("2d").drawImage(im, 0, sy, sw, sh, 0, 0, c.width, c.height);
+  return {media_type:"image/jpeg", data: c.toDataURL("image/jpeg", 0.88).split(",")[1]};
+}
+// Vista previa: lo que se va a registrar, para revisar y aceptar
+function abrirConfirmacion(){
+  const d = S.rec, filas = d.filas.filter(f => f.nombre.trim());
+  if(!d.proveedor.trim()){ toast("Escribe el proveedor."); return; }
+  if(!filas.length){ toast("Agrega al menos un producto."); return; }
+  const grupos = new Map(); filas.forEach(f => { const k = norm(f.nombre); if(!grupos.has(k)) grupos.set(k, []); grupos.get(k).push(f); });
+  const suma = filas.reduce((a,f) => a + (f.bonificacion ? 0 : toNum(f.importe)), 0), total = toNum(d.total) || suma;
+  const cuadra = !toNum(d.total) || Math.abs(suma - toNum(d.total)) < 0.01;
+  const filasHtml = [...grupos.values()].map(fs => {
+    const p = porNombre(fs[0].nombre), entran = fs.reduce((a,f) => a+toNum(f.cantidad)*toNum(f.factor), 0);
+    const imp = fs.reduce((a,f) => a + (f.bonificacion ? 0 : toNum(f.importe)), 0), bon = fs.filter(f => f.bonificacion).reduce((a,f) => a+toNum(f.cantidad)*toNum(f.factor), 0);
+    const obs = [...new Set(fs.map(f => f.observacion).filter(Boolean))];
+    return `<tr><td><b>${esc(fs[0].nombre)}</b> ${p ? "" : '<span class="pill warn">Nuevo</span>'}${bon ? ` <span class="pill bonus">${num(bon,0)} gratis</span>` : ""}${obs.map(o => ` <span class="pill bad">${esc(o)}</span>`).join("")}
+      <div class="small muted">${fs.map(f => `${num(f.cantidad,2)} ${esc(f.unidad)}${toNum(f.factor) !== 1 ? ` × ${num(f.factor,2)}` : ""}`).join(" + ")}</div></td>
+      <td class="r"><b>+${num(entran,2)}</b><div class="small muted">${esc(plural(p ? uv(p) : "unidad", entran))}</div></td><td class="r">${soles(imp)}</td></tr>`; }).join("");
+  $("#overlayRoot").innerHTML = `<div class="overlay centro" data-act="cerrar-fondo"><div class="recibo" role="dialog" aria-label="Revisar antes de guardar">
+    <div class="recibo-h"><span class="small">Revisa antes de guardar</span><h2>${esc(d.proveedor)}</h2>
+      <p class="small" style="margin:0">${fechaLarga(d.fecha || hoy())}${d.documento ? " · "+esc(d.documento) : ""} · ${d.condicion === "credito" ? `Crédito ${toNum(d.dias)} días (vence ${fecha(sumarDias(d.fecha || hoy(), toNum(d.dias)))})` : "Contado"}</p></div>
+    <div class="tbl"><table><thead><tr><th>Producto</th><th class="r">Entra al stock</th><th class="r">Importe</th></tr></thead><tbody>${filasHtml}</tbody></table></div>
+    <div class="recibo-t"><span>Total a pagar</span><b>${soles(total)}</b></div>
+    ${cuadra ? `<div class="cuadre ok">✓ Los importes cuadran con el total.</div>` : `<div class="cuadre bad">Los importes suman ${soles(suma)} y el total dice ${soles(d.total)}.</div>`}
+    <div class="row between"><button class="btn" data-act="cerrar">← Volver a editar</button><button class="btn primary" data-act="confirmar-rec">✓ Aceptar y guardar</button></div>
+  </div></div>`;
 }
 const porAliasParecido = desc => S.productos.find(p => [p.nombre, ...(p.alias||[])].some(a => parecido(a, desc) >= 0.8));
 // Pasa lo leído de la foto al cuadro: llena las filas del pedido que coinciden y agrega las demás
@@ -759,9 +846,9 @@ function aplicarLectura(r){
   for(const it of r.items){
     const desc = String(it.descripcion || "").trim();
     const ex = porAlias(desc) || porAliasParecido(desc);
-    const nombre = ex?.nombre || it.nuevo?.nombre || nombreBonito(desc);
-    const uc = String(it.unidadCompra || "UN").toUpperCase().trim();
-    const datos = {nombre, unidad:uc, factor: ex?.presentaciones?.[uc] || toNum(it.factor) || 1, cantidad: toNum(it.cantidad) || 1, precioUnit: toNum(it.precioUnit), importe: toNum(it.importe), bonificacion: !!it.bonificacion, descripcion: desc, importeManual: true};
+    const nombre = ex?.nombre || porNombre(it.nombre || "")?.nombre || it.nombre || it.nuevo?.nombre || nombreBonito(desc);
+    const uc = String(it.unidadCompra || "UN").toUpperCase().trim().replace(/^SAC$/,"SACO").replace(/^CJ$/,"CAJA").replace(/^UND$/,"UN");
+    const datos = {nombre, marca: it.marca || "", linea: it.linea || "", unidad:uc, factor: ex?.presentaciones?.[uc] || toNum(it.factor) || 1, cantidad: toNum(it.cantidad) || 1, precioUnit: toNum(it.precioUnit), importe: toNum(it.importe), bonificacion: !!it.bonificacion, descripcion: desc, importeManual: true};
     const delPedido = filas.find(f => !f.llenada && norm(f.nombre) === norm(nombre));
     if(delPedido) Object.assign(delPedido, datos, {llenada:true}); else filas.push({...filaVacia(), ...datos});
   }
@@ -787,7 +874,7 @@ async function guardarRecepcion(btn){
       const pres = {}; fs.forEach(f => pres[String(f.unidad || "UN").toUpperCase()] = toNum(f.factor));
       const alias = [...new Set(fs.map(f => norm(f.descripcion)).filter(Boolean))];
       let p = porNombre(fs[0].nombre);
-      if(!p) [p] = await insertar("productos", {nombre: fs[0].nombre.trim(), presentaciones: pres, alias});
+      if(!p) [p] = await insertar("productos", {nombre: fs[0].nombre.trim(), marca: fs[0].marca || null, linea: fs[0].linea || null, presentaciones: pres, alias});
       else await actualizar("productos", p.id, {presentaciones: {...(p.presentaciones || {}), ...pres}, alias: [...new Set([...(p.alias || []), ...alias])]});
       fs.forEach(f => { const c = toNum(f.cantidad); if(c > 0 || f.observacion) items.push({producto_id:p.id, descripcion:f.descripcion || null, cantidad:c,
         unidad_compra:String(f.unidad || "UN").toUpperCase(), factor:toNum(f.factor), unidades:c*toNum(f.factor), precio_unit:toNum(f.precioUnit),
@@ -845,6 +932,26 @@ function renderFicha(){
 function cerrarFicha(){ S.abierto = null; $("#overlayRoot").innerHTML = ""; }
 
 // ----- Compras registradas (con borrado por boleta y por día) -----
+// ----- Borrar pruebas: todo en un solo lugar -----
+function vistaPruebas(){
+  const pedidos = S.pedidos.slice(0, 40);
+  const porDia = {}; S.recepciones.forEach(r => (porDia[r.fecha] ??= []).push(r));
+  const dias = Object.keys(porDia).sort().reverse();
+  return `<div><h1>Borrar pruebas</h1><p class="sub">Para limpiar lo que registraste probando. Cada botón pide tocar dos veces. Al borrar, el stock se recalcula solo.</p></div>
+  <div class="grid-borrar">
+    <section class="card"><h2>Pedidos</h2>
+      ${pedidos.length ? pedidos.map(pe => `<div class="fila-borrar"><span><b>${esc(prov(pe.proveedor_id)?.nombre || "Proveedor")}</b><br><span class="small muted">Pedido ${fecha(pe.fecha)} · ${S.pitems.filter(i => i.pedido_id === pe.id).length} productos · ${pe.estado}</span></span><button class="btn sm danger" data-act="borrar-pedido" data-id="${pe.id}">Borrar</button></div>`).join("") : `<p class="muted" style="margin:0">No hay pedidos.</p>`}
+    </section>
+    <section class="card"><h2>Boletas recibidas</h2>
+      ${dias.length ? dias.map(f => `<div class="fila-borrar dia"><b>${fechaLarga(f)}</b><button class="btn sm danger" data-act="borrar-dia" data-f="${f}">Borrar el día</button></div>
+        ${porDia[f].map(r => `<div class="fila-borrar"><span>${esc(prov(r.proveedor_id)?.nombre || "—")} <span class="mono muted">${esc(r.documento || "")}</span><br><span class="small muted">${soles(r.total)}</span></span><button class="btn sm danger" data-act="borrar-rec" data-id="${r.id}">Borrar</button></div>`).join("")}`).join("") : `<p class="muted" style="margin:0">No hay boletas.</p>`}
+    </section>
+  </div>
+  <section class="card"><h2>Por fecha</h2><p class="sub" style="margin:0">Borra pedidos, boletas y conteos registrados en esa fecha.</p>
+    <div class="row"><input type="date" id="del-fecha" value="${hoy()}" style="width:auto"><button class="btn danger" data-act="borrar-fecha">Borrar lo de esa fecha</button></div></section>
+  <section class="card zona-peligro"><h2>Empezar de cero</h2><p class="sub" style="margin:0">Borra absolutamente todo: productos, pedidos, boletas, créditos y proveedores.</p>
+    <div><button class="btn danger" data-act="borrar-todo">Borrar TODO</button></div></section>`;
+}
 function vistaCompras(){
   const porDia = {}; S.recepciones.forEach(r => (porDia[r.fecha] ??= []).push(r));
   const dias = Object.keys(porDia).sort().reverse();
@@ -902,7 +1009,7 @@ function vistaMas(){
   return `<div><h1>Más</h1></div>
   <section class="card">
     <button class="btn big" data-go="inventario">Inventario general</button>
-    <button class="btn big" data-go="compras">Compras registradas</button>
+    <button class="btn big danger" data-go="pruebas">🗑 Borrar pruebas</button>
     <button class="btn big" data-go="creditos">Créditos con proveedores</button>
     <button class="btn big" data-go="proveedores">Proveedores</button>
   </section>
@@ -957,13 +1064,16 @@ document.addEventListener("click", async e => {
     else if(a === "add-fila"){ S.rec.filas.push(filaVacia()); render(); $(`[data-f="${S.rec.filas.length-1}"][data-k="nombre"]`)?.focus(); }
     else if(a === "del-fila"){ S.rec.filas.splice(+t.dataset.i, 1); if(!S.rec.filas.length) S.rec.filas.push(filaVacia()); render(); }
     else if(a === "usar-nombre"){ e.preventDefault(); const f = S.rec.filas[+t.dataset.i]; f.nombre = t.dataset.n; const p = porNombre(f.nombre); if(p?.presentaciones?.[f.unidad]) f.factor = p.presentaciones[f.unidad]; render(); }
-    else if(a === "guardar-rec") await guardarRecepcion(t);
+    else if(a === "guardar-rec") abrirConfirmacion();
+    else if(a === "confirmar-rec"){ await guardarRecepcion(t); if(!S.rec) $("#overlayRoot").innerHTML = ""; }
     else if(a === "zoom") abrirZoom();
     else if(a === "cerrar-zoom"){ if(e.target === t || t.tagName === "BUTTON") $("#overlayRoot").innerHTML = ""; }
     else if(a === "zoom-mas" || a === "zoom-menos"){ S.zoomW = Math.max(100, Math.min(400, (S.zoomW || 100) + (a === "zoom-mas" ? 50 : -50))); $("#zoomImg").style.width = S.zoomW + "%"; }
     else if(a === "girar"){ S.rec.img = await girarImagen(S.rec.img); S.rec.url = S.rec.img.src; render(); }
     // Borrar pruebas
     else if(a === "borrar-rec"){ if(!await confirmar(t, "¿Seguro? Tocar otra vez")) return; t.disabled = true; await borrar("recepciones", id); await limpiarHuerfanos(); await refrescar(true); toast("Boleta borrada. El stock se recalculó."); }
+    else if(a === "borrar-pedido"){ if(!await confirmar(t, "¿Borrar pedido y lo recibido? Tocar otra vez")) return; t.disabled = true;
+      await api(`recepciones?pedido_id=eq.${id}`, {method:"DELETE"}); await borrar("pedidos", id); await limpiarHuerfanos(); await refrescar(true); toast("Pedido borrado."); }
     else if(a === "borrar-dia"){ if(!await confirmar(t, "¿Borrar todo el día? Tocar otra vez")) return; t.disabled = true; await api(`recepciones?fecha=eq.${t.dataset.f}`, {method:"DELETE"}); await limpiarHuerfanos(); await refrescar(true); toast(`Compras del ${fecha(t.dataset.f)} borradas.`); }
     else if(a === "borrar-fecha"){
       const f = $("#del-fecha").value; if(!f){ toast("Elige una fecha."); return; }
