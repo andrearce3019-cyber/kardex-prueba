@@ -83,7 +83,7 @@ button.kpi{cursor:pointer}button.kpi:hover{border-color:var(--accent)}
 .pill.ok{background:var(--ok-weak);color:var(--ok)}
 .pill.bajo,.pill.warn{background:var(--warn-weak);color:var(--warn)}
 .pill.quiebre,.pill.agotado,.pill.bad{background:var(--bad-weak);color:var(--bad)}
-.pill.sindatos,.pill.sinmin,.pill.gris{background:var(--soft);color:var(--muted)}
+.pill.sindatos,.pill.sinmin,.pill.porllegar,.pill.gris{background:var(--soft);color:var(--muted)}
 .pill.bonus{background:var(--bonus-weak);color:var(--bonus)}
 .pill.tag{background:var(--accent-weak);color:var(--accent)}
 .alerta{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;padding:10px 12px;border-radius:10px;background:var(--soft)}
@@ -324,8 +324,9 @@ tr.click:hover td{background:#F7FAFF}
   table.lm td:first-child b{font-size:1rem}
   table.lm td:not(:first-child){grid-column:2}
   table.lm td:nth-child(2) b{font-size:1.25rem;font-family:var(--f-display)}
-  table.lm-stock td:nth-child(3),table.lm-inv td:nth-child(2),table.lm-inv td:nth-child(4){display:none}
-  table.lm-stock td:nth-child(4),table.lm-inv td:nth-child(5),table.lm-alert td:nth-child(3){font-size:.82rem;color:var(--muted)}
+  table.lm-stock td:nth-child(2),table.lm-stock td:nth-child(4),table.lm-stock td:nth-child(6),table.lm-inv td:nth-child(2),table.lm-inv td:nth-child(4){display:none}
+  table.lm-stock td:nth-child(3) b{font-size:1.2rem;font-family:var(--f-display)}
+  table.lm-stock td:nth-child(5),table.lm-inv td:nth-child(5),table.lm-alert td:nth-child(3){font-size:.82rem;color:var(--muted)}
   table.lm-inv td:nth-child(3) b{font-size:1.25rem}
   .filters{display:grid;grid-template-columns:1fr 1fr;gap:8px}
   .filters>input{grid-column:1/-1}
@@ -453,7 +454,7 @@ function calc(p){
   const consumo = primera ? vendido30/dias : null;
   const cobertura = consumo > 0 ? stock/consumo : null;
   let estado = "ok";
-  if(stock <= 0) estado = "agotado";
+  if(stock <= 0) estado = its.length ? "agotado" : "porllegar";
   else if((toNum(p.stock_minimo) > 0 && stock <= toNum(p.stock_minimo)) || (cobertura !== null && cobertura <= DIAS_QUIEBRE)) estado = "quiebre";
   else if(toNum(p.stock_minimo) > 0 && stock <= toNum(p.stock_minimo) * 1.5) estado = "bajo";
   else if(cobertura !== null && cobertura <= DIAS_BAJO) estado = "bajo";
@@ -465,8 +466,14 @@ function calc(p){
   const provs = new Set(its.map(i => S.recepciones.find(r => r.id === i.recepcion_id)?.proveedor_id).filter(Boolean));
   return {stock, costo, bon, vendidoHoy, consumo, cobertura, estado, sugerido, provs, valor: costo !== null ? Math.max(0,stock)*costo : 0};
 }
-const ESTADO = {agotado:"Agotado", quiebre:"Bajo el mínimo", bajo:"Cerca del mínimo", ok:"Bien", sinmin:"Sin mínimo"};
-const ORDEN = {agotado:0, quiebre:1, bajo:2, sinmin:3, ok:4};
+const ESTADO = {porllegar:"Por llegar", agotado:"Agotado", quiebre:"Bajo el mínimo", bajo:"Cerca del mínimo", ok:"Bien", sinmin:"Sin mínimo"};
+const ORDEN = {porllegar:3, agotado:0, quiebre:1, bajo:2, sinmin:3, ok:4};
+// Presentación tipo almacén: stock en el empaque mayor (CJ), su factor y las unidades
+const ABREV = {CAJA:"CJ", caja:"CJ", UN:"UND", unidad:"UND", paquete:"PQT", PAQ:"PQT", PQT:"PQT", tira:"TIRA", TIRA:"TIRA", pack:"PACK", PACK:"PACK", POTE:"POTE", SACO:"SACO", docena:"DOC", DOC:"DOC", ciento:"CTO", bolsa:"BOL", BOLSA:"BOL", rollo:"ROL", botella:"BOT", "galón":"GAL", kilo:"KG", KG:"KG", FARDO:"FDO", LT:"LT"};
+const abr = u => ABREV[u] || String(u || "").toUpperCase().slice(0,4);
+function empaque(p){ const e = Object.entries(p.presentaciones || {}).filter(([,f]) => toNum(f) > 1).sort((a,b) => toNum(b[1]) - toNum(a[1]))[0]; return e ? {unidad:e[0], factor:toNum(e[1])} : null; }
+const presentacionTxt = p => { const e = empaque(p); return e ? `${abr(e.unidad)}/${abr(uv(p))}` : abr(uv(p)); };
+function stockTxt(p, u){ const e = empaque(p); if(!e) return `${num(u,2)} ${abr(uv(p))}`; const m = Math.floor(u / e.factor + 1e-9), resto = Math.round((u - m*e.factor)*100)/100; return `${m} ${abr(e.unidad)}${resto ? ` + ${num(resto,2)} ${abr(uv(p))}` : ""}`; }
 // Búsqueda por nombre, marca, línea, código propio o descripción del proveedor
 const coincide = (p, q) => norm([p.codigo, p.nombre, p.marca, p.linea, p.categoria, ...(p.alias || []).filter(a => !a.startsWith("#"))].join(" ")).includes(q) || norm(p.codigo || "").replace(/ /g,"").includes(q.replace(/ /g,""));
 const pill = e => `<span class="pill ${e}">${ESTADO[e]}</span>`;
@@ -580,12 +587,14 @@ function vistaInicio(){
       <select id="f-prov" aria-label="Proveedor"><option value="">Todos los proveedores</option>${S.proveedores.map(v => `<option value="${v.id}" ${v.id===f.prov?"selected":""}>${esc(v.nombre)}</option>`).join("")}</select>
     </div>
     <div class="tbl"><table class="lm lm-stock">
-      <thead><tr><th>Producto</th><th class="r">Stock</th><th class="r">Costo c/u</th><th class="r">Valor</th><th>Estado</th></tr></thead>
+      <thead><tr><th>Producto</th><th>Presentación</th><th class="r">Stock</th><th class="r">Factor</th><th class="r">Unidades</th><th class="r">Valor</th><th>Estado</th></tr></thead>
       <tbody>${ps.map(p => { const c = C.get(p.id); return `<tr class="click" data-act="abrir" data-id="${p.id}">
         <td><span class="cod">${esc(p.codigo || "")}</span><b>${esc(p.nombre)}</b><br><span class="small muted">${esc([p.marca,p.linea].filter(Boolean).join(" · "))}</span></td>
-        <td class="r"><b>${num(c.stock,1)}</b> <span class="small muted">${esc(plural(uv(p),c.stock))}</span></td>
-        <td class="r">${c.costo !== null ? soles(c.costo) : "—"}</td>
-        <td class="r">${soles(c.valor)}</td><td>${pill(c.estado)}</td></tr>`; }).join("") || `<tr><td colspan="5" class="muted">Ningún producto coincide.</td></tr>`}</tbody>
+        <td data-l="Presentación"><span class="pill tag">${esc(presentacionTxt(p))}</span></td>
+        <td class="r"><b>${esc(stockTxt(p, c.stock))}</b></td>
+        <td class="r">${empaque(p) ? num(empaque(p).factor,0) : "—"}</td>
+        <td class="r">${num(c.stock,2)} <span class="small muted">${esc(abr(uv(p)))}</span></td>
+        <td class="r">${soles(c.valor)}</td><td>${pill(c.estado)}</td></tr>`; }).join("") || `<tr><td colspan="7" class="muted">Ningún producto coincide.</td></tr>`}</tbody>
     </table></div>
   </section>`;
 }
@@ -614,7 +623,7 @@ const SECCIONES_WA = [["agotado","🔴 Agotados"],["quiebre","🟠 Bajo el míni
 function mensajeElegido(o){
   const C = new Map(S.productos.map(p => [p.id, calc(p)]));
   const ps = S.productos.filter(p => (!o.linea || (p.linea || "Sin línea") === o.linea) && (!o.marca || (p.marca || "Sin marca") === o.marca)).sort((a,b) => a.nombre.localeCompare(b.nombre));
-  const linea = p => { const c = C.get(p.id); return `• ${p.codigo ? p.codigo+" " : ""}${p.nombre}: ${num(c.stock,1)} ${plural(uv(p), c.stock)}${toNum(p.stock_minimo) ? ` (mín. ${toNum(p.stock_minimo)})` : ""}`; };
+  const linea = p => { const c = C.get(p.id); return `• ${p.codigo ? p.codigo+" " : ""}${p.nombre}: ${stockTxt(p, c.stock)}${empaque(p) ? ` (${num(c.stock,2)} ${abr(uv(p))})` : ""}${toNum(p.stock_minimo) ? ` (mín. ${toNum(p.stock_minimo)})` : ""}`; };
   const filtro = [o.linea, o.marca].filter(Boolean).join(" · ");
   const L = [`*Kardex · ${fechaLarga(hoy())}*${filtro ? `\n_${filtro}_` : ""}`];
   const bloque = (titulo, lista) => { if(lista.length){ L.push("", `*${titulo}* (${lista.length})`); lista.forEach(p => L.push(linea(p))); } };
@@ -765,11 +774,12 @@ function formPedido(){
       <section class="card">
         <h2>Productos</h2>
         <datalist id="dlProd">${S.productos.map(p => `<option value="${esc(p.nombre)}">`).join("")}</datalist>
-        <div class="tbl"><table class="boleta"><thead><tr><th>Producto</th><th>Unidad</th><th class="r">Trae</th><th class="r">Cantidad</th><th class="r">Precio S/</th><th>Bonif.</th><th></th></tr></thead><tbody>
+        <div class="tbl"><table class="boleta"><thead><tr><th>Producto</th><th>Lo vendes por</th><th>Lo compras en</th><th class="r" title="Cuántas unidades de venta trae cada empaque">Trae c/u</th><th class="r">Cantidad</th><th class="r">Precio S/</th><th>Bonif.</th><th></th></tr></thead><tbody>
           ${d.lineas.map((l,i) => { const p = porNombre(l.nombre); const dup = !p && l.nombre ? parecidos(l.nombre) : [];
-            return `<tr class="${l.bonif ? "bon" : ""}"><td class="prod" data-l="Producto"><input data-pl="${i}" data-k="nombre" list="dlProd" value="${esc(l.nombre)}" placeholder="Escribe o elige"><div class="hint">${p ? `<span class="muted"><span class="cod">${esc(p.codigo || "")}</span>Reconocido: ya está en tu inventario${p.marca || p.linea ? " · "+esc([p.marca, p.linea].filter(Boolean).join(" · ")) : ""}</span>` : l.nombre ? `<span style="color:var(--warn)">${dup.length ? "¿Es "+esc(dup[0].nombre)+"?" : "Producto nuevo"}</span>${l.marca || l.linea ? ` <span class="pill tag">${esc([l.marca, l.linea].filter(Boolean).join(" · "))}</span>` : ""}` : ""}${l.bonif ? ' <span class="pill bonus">Bonificación</span>' : ""}</div></td>
-            <td data-l="Unidad"><input data-pl="${i}" data-k="unidad" value="${esc(l.unidad)}" placeholder="CAJA"></td>
-            <td class="n" data-l="Trae"><input data-pl="${i}" data-k="factor" inputmode="decimal" value="${esc(l.factor)}" title="Unidades de venta que trae cada una"></td>
+            return `<tr class="${l.bonif ? "bon" : ""}"><td class="prod" data-l="Producto"><input data-pl="${i}" data-k="nombre" list="dlProd" value="${esc(l.nombre)}" placeholder="Escribe o elige"><div class="hint">${p ? `<span class="muted"><span class="cod">${esc(p.codigo || "")}</span>Reconocido: ya está en tu inventario${p.marca || p.linea ? " · "+esc([p.marca, p.linea].filter(Boolean).join(" · ")) : ""}</span>` : l.nombre ? `<span style="color:var(--warn)">${dup.length ? "¿Es "+esc(dup[0].nombre)+"?" : "Producto nuevo"}</span>${l.marca || l.linea ? ` <span class="pill tag">${esc([l.marca, l.linea].filter(Boolean).join(" · "))}</span>` : ""}` : ""}${l.bonif ? ' <span class="pill bonus">Bonificación</span>' : ""}${l.nombre ? `<div class="muted">${num(toNum(l.cantidad),2)} ${esc(l.unidad || "UN")}${toNum(l.factor) !== 1 ? ` × ${num(toNum(l.factor),2)}` : ""} = entran <b>${num(toNum(l.cantidad)*toNum(l.factor),2)} ${esc(plural(p ? uv(p) : (l.unidadVenta || "unidad"), toNum(l.cantidad)*toNum(l.factor)))}</b></div>` : ""}</div></td>
+            <td data-l="Lo vendes por">${p ? `<span class="pill tag">${esc(uv(p))}</span>` : `<select data-pl="${i}" data-k="unidadVenta">${UNIDADES.map(u => `<option ${u===(l.unidadVenta||"unidad")?"selected":""}>${u}</option>`).join("")}</select>`}</td>
+            <td data-l="Lo compras en"><input data-pl="${i}" data-k="unidad" value="${esc(l.unidad)}" placeholder="CAJA"></td>
+            <td class="n" data-l="Trae c/u"><input data-pl="${i}" data-k="factor" inputmode="decimal" value="${esc(l.factor)}" title="Unidades de venta que trae cada una"></td>
             <td class="n" data-l="Cantidad"><input data-pl="${i}" data-k="cantidad" inputmode="decimal" value="${esc(l.cantidad)}"></td>
             <td class="n" data-l="Precio S/"><input data-pl="${i}" data-k="precio" inputmode="decimal" value="${esc(l.precio ?? "")}" placeholder="0.00"></td>
             <td class="c" data-l="Bonif."><input type="checkbox" data-pl="${i}" data-k="bonif" ${l.bonif ? "checked" : ""} aria-label="Bonificación"></td>
@@ -808,7 +818,7 @@ async function leerBoletaPedido(){
       const desc = String(it.descripcion || "").trim(), ex = porCodigoProv(d.proveedor, it.codigo) || porAlias(desc) || porAliasParecido(desc) || porNombre(it.nombre || "");
       const uc = String(it.unidadCompra || "UN").toUpperCase().trim().replace(/^SAC$/,"SACO").replace(/^CJ$/,"CAJA").replace(/^UND$/,"UN");
       return {nombre: ex?.nombre || it.nombre || nombreBonito(desc), cantidad: toNum(it.cantidad) || 1, unidad: uc, factor: ex?.presentaciones?.[uc] || toNum(it.factor) || 1,
-        codigoProv: it.codigo || "", precio: toNum(it.precioUnit), bonif: !!it.bonificacion || toNum(it.importe) === 0, descripcion: desc, marca: it.marca || "", linea: it.linea || ""};
+        codigoProv: it.codigo || "", unidadVenta: UNIDADES.includes(it.unidadVenta) ? it.unidadVenta : "unidad", empaque: it.empaque && toNum(it.empaque.factor) > 1 ? {unidad: String(it.empaque.unidad || "CAJA").toUpperCase().replace(/^CJ$/,"CAJA"), factor: toNum(it.empaque.factor)} : null, precio: toNum(it.precioUnit), bonif: !!it.bonificacion || toNum(it.importe) === 0, descripcion: desc, marca: it.marca || "", linea: it.linea || ""};
     });
     d.leida = true;
     toast(`Leí ${items.length} líneas${res.revisada ? " (revisadas dos veces)" : ""}. Revisa y guarda el pedido.`);
@@ -1208,6 +1218,12 @@ function vistaCompras(){
 }
 const rangoDia = f => { const a = new Date(f+"T00:00:00"), b = new Date(f+"T00:00:00"); b.setDate(b.getDate()+1); return [a.toISOString(), b.toISOString()].map(encodeURIComponent); };
 // Después de borrar: los pedidos vuelven a su estado real y se quitan productos sin ningún movimiento
+// Borrar una boleta recibida borra también su pedido: en esta tienda la boleta ES el pedido
+async function borrarRecepciones(recs){
+  const pedidos = [...new Set(recs.map(r => r.pedido_id).filter(Boolean))];
+  for(const r of recs) await borrar("recepciones", r.id);
+  for(const pid of pedidos){ await api(`recepciones?pedido_id=eq.${pid}`, {method:"DELETE"}); await borrar("pedidos", pid); }
+}
 async function limpiarHuerfanos(){
   await cargar();
   for(const pe of S.pedidos){ if(!["recibido","parcial"].includes(pe.estado)) continue;
@@ -1264,7 +1280,7 @@ async function descargarExcel(archivo, hojas){
   for(const [nombre, filas] of Object.entries(hojas)) XLSX.utils.book_append_sheet(libro, XLSX.utils.json_to_sheet(filas.length ? filas : [{"Sin datos":""}]), nombre.slice(0,31));
   XLSX.writeFile(libro, `${archivo}-${hoy()}.xlsx`);
 }
-const filasStock = () => S.productos.map(p => { const c = calc(p); return {"Código":p.codigo || "", "Producto":p.nombre, "Marca":p.marca || "", "Línea":p.linea || "", "Stock":Math.round(c.stock*100)/100, "Unidad":uv(p), "Mínimo":toNum(p.stock_minimo) || "", "Estado":ESTADO[c.estado], "Costo unitario":c.costo !== null ? Math.round(c.costo*100)/100 : "", "Valor S/":Math.round(c.valor*100)/100}; });
+const filasStock = () => S.productos.map(p => { const c = calc(p); return {"Código":p.codigo || "", "Producto":p.nombre, "Marca":p.marca || "", "Línea":p.linea || "", "Presentación":presentacionTxt(p), "Stock (empaque)":stockTxt(p, c.stock), "Factor":empaque(p)?.factor || 1, "Unidades":Math.round(c.stock*100)/100, "Unidad de venta":uv(p), "Mínimo":toNum(p.stock_minimo) || "", "Estado":ESTADO[c.estado], "Costo unitario":c.costo !== null ? Math.round(c.costo*100)/100 : "", "Valor S/":Math.round(c.valor*100)/100}; });
 const filasCompras = () => S.recepciones.flatMap(r => S.ritems.filter(i => i.recepcion_id === r.id).map(i => { const p = prod(i.producto_id); return {"Fecha":r.fecha, "Proveedor":prov(r.proveedor_id)?.nombre || "", "Boleta":r.documento || "", "Pago":r.condicion, "Vence":r.vence || "", "Pagado":r.condicion === "credito" ? (r.pagado ? "Sí" : "No") : "", "Código":p?.codigo || "", "Producto":p?.nombre || "", "Marca":p?.marca || "", "Línea":p?.linea || "", "Cantidad":toNum(i.cantidad), "Unidad compra":i.unidad_compra, "Trae":toNum(i.factor), "Unidades":toNum(i.unidades), "Precio":toNum(i.precio_unit), "Importe":toNum(i.importe), "Bonificación":i.bonificacion ? "Sí" : "", "Cómo llegó":i.observacion || "Bien"}; }));
 const filasPedidos = () => S.pedidos.flatMap(pe => { const a = avancePedido(pe), estado = pe.estado === "recibido" ? "Recibido completo" : pe.estado === "pendiente" ? "Por llegar" : a.recepciones ? "Llegó incompleto" : "Cancelado";
   return a.lineas.map(l => { const p = prod(l.producto_id); return {"Fecha pedido":pe.fecha, "Llega":pe.entrega || "", "Proveedor":prov(pe.proveedor_id)?.nombre || "", "Boleta":pe.documento || "", "Estado":estado, "Código":p?.codigo || "", "Producto":p?.nombre || "", "Pedido (unid.)":l.unidadesPedidas, "Llegó (unid.)":l.unidadesRecibidas, "Faltó (unid.)":l.pendiente, "Bonificación":l.bonificacion ? "Sí" : ""}; }); });
@@ -1374,17 +1390,17 @@ document.addEventListener("click", async e => {
     else if(a === "zoom-mas" || a === "zoom-menos"){ S.zoomW = Math.max(100, Math.min(400, (S.zoomW || 100) + (a === "zoom-mas" ? 50 : -50))); $("#zoomImg").style.width = S.zoomW + "%"; }
     else if(a === "girar"){ S.rec.img = await girarImagen(S.rec.img); S.rec.url = S.rec.img.src; render(); }
     // Borrar pruebas
-    else if(a === "borrar-rec"){ e.preventDefault(); if(!await confirmar(t, "¿Seguro? Tocar otra vez")) return; t.disabled = true; await borrar("recepciones", id); await limpiarHuerfanos(); await refrescar(true); toast("Boleta borrada. El stock se recalculó."); }
+    else if(a === "borrar-rec"){ e.preventDefault(); if(!await confirmar(t, "¿Borrar boleta, su pedido y su stock? Tocar otra vez")) return; t.disabled = true; await borrarRecepciones(S.recepciones.filter(r => r.id === id)); await limpiarHuerfanos(); await refrescar(true); toast("Boleta borrada de todo: historial, pedido y stock."); }
     else if(a === "borrar-pedido"){ if(!await confirmar(t, "¿Borrar pedido y lo recibido? Tocar otra vez")) return; t.disabled = true;
       await api(`recepciones?pedido_id=eq.${id}`, {method:"DELETE"}); await borrar("pedidos", id); await limpiarHuerfanos(); await refrescar(true); toast("Pedido borrado."); }
-    else if(a === "borrar-dia"){ if(!await confirmar(t, "¿Borrar todo el día? Tocar otra vez")) return; t.disabled = true; await api(`recepciones?fecha=eq.${t.dataset.f}`, {method:"DELETE"}); await limpiarHuerfanos(); await refrescar(true); toast(`Compras del ${fecha(t.dataset.f)} borradas.`); }
+    else if(a === "borrar-dia"){ if(!await confirmar(t, "¿Borrar todo el día? Tocar otra vez")) return; t.disabled = true; await borrarRecepciones(S.recepciones.filter(r => r.fecha === t.dataset.f)); await limpiarHuerfanos(); await refrescar(true); toast(`Se borró todo lo del ${fecha(t.dataset.f)}: boletas, pedidos y stock.`); }
     else if(a === "borrar-fecha"){
       const f = $("#del-fecha").value; if(!f){ toast("Elige una fecha."); return; }
       if(!await confirmar(t, `¿Borrar todo lo del ${fecha(f)}? Tocar otra vez`)) return; t.disabled = true;
       const [ini, fin] = rangoDia(f);
       await api(`ventas?creado=gte.${ini}&creado=lt.${fin}`, {method:"DELETE"});
       await api(`ajustes?creado=gte.${ini}&creado=lt.${fin}`, {method:"DELETE"});
-      await api(`recepciones?fecha=eq.${f}`, {method:"DELETE"});
+      await borrarRecepciones(S.recepciones.filter(r => r.fecha === f));
       await api(`pedidos?fecha=eq.${f}`, {method:"DELETE"});
       await limpiarHuerfanos(); await refrescar(true); toast(`Se borró todo lo del ${fecha(f)}.`);
     }
@@ -1455,6 +1471,7 @@ document.addEventListener("change", async e => {
   if(t.dataset.waF){ S.wa[t.dataset.waF] = t.value; $("#wa-texto").value = mensajeElegido(S.wa); return; }
   if(["f-linea","f-marca","f-prov"].includes(t.id)){ S.f[t.id.slice(2)] = t.value; render(); return; }
   if(t.dataset.pl !== undefined && t.dataset.k === "nombre"){ render(); return; }
+  if(t.dataset.pl !== undefined && ["cantidad","factor","unidad","unidadVenta"].includes(t.dataset.k)){ S.pedido.lineas[+t.dataset.pl][t.dataset.k] = t.value; render(); return; }
   if(t.dataset.pl !== undefined && t.dataset.k === "bonif"){ S.pedido.lineas[+t.dataset.pl].bonif = t.checked; render(); return; }
   if(t.id === "foto-pedido" && t.files?.[0]){
     try{ const {im, url} = await cargarImagen(t.files[0]); Object.assign(S.pedido, {img:im, url, error:"", leida:false}); render(); leerBoletaPedido(); }
@@ -1493,18 +1510,23 @@ async function guardarPedido(btn){
   const d = S.pedido, lineas = d.lineas.filter(l => l.nombre.trim() && toNum(l.cantidad) > 0);
   if(!d.proveedor.trim()){ toast("Escribe el proveedor."); return; }
   if(!lineas.length){ toast("Agrega al menos un producto."); return; }
+  // La misma boleta del mismo proveedor no se registra dos veces sin querer
+  const doc = norm(d.documento || "");
+  const repetido = doc && S.pedidos.find(pe => norm(pe.documento || "") === doc && norm(prov(pe.proveedor_id)?.nombre || "") === norm(d.proveedor));
+  if(repetido && btn.dataset.ok !== "1"){ btn.dataset.ok = "1"; btn.textContent = "Ya existe: tocar otra vez para guardarla igual"; toast(`La boleta ${d.documento} de ${d.proveedor} ya está registrada (pedido del ${fecha(repetido.fecha)}).`); return; }
   btn.disabled = true;
   let pr = S.proveedores.find(p => norm(p.nombre) === norm(d.proveedor));
   if(!pr) [pr] = await insertar("proveedores", {nombre:d.proveedor.trim()});
   const items = [];
   for(const l of lineas){
     let p = porNombre(l.nombre);
-    const uc = String(l.unidad||"UN").toUpperCase().trim(), alias = [l.descripcion ? norm(l.descripcion) : "", l.codigoProv ? claveCod(d.proveedor, l.codigoProv) : ""].filter(Boolean);
-    if(!p){ [p] = await insertar("productos", {nombre:l.nombre.trim(), marca: l.marca || null, linea: l.linea || null, presentaciones:{[uc]: toNum(l.factor) || 1}, alias}); S.productos.push(p); }
+    const uc = String(l.unidad||"UN").toUpperCase().trim(), presL = {[uc]: toNum(l.factor) || 1, ...(l.empaque ? {[l.empaque.unidad]: l.empaque.factor} : {})}, alias = [l.descripcion ? norm(l.descripcion) : "", l.codigoProv ? claveCod(d.proveedor, l.codigoProv) : ""].filter(Boolean);
+    if(!p){ [p] = await insertar("productos", {nombre:l.nombre.trim(), marca: l.marca || null, linea: l.linea || null, unidad_venta: l.unidadVenta || "unidad", presentaciones:presL, alias}); S.productos.push(p); }
     else {
       // Recordar cómo lo escribe este proveedor (descripción y su código) para reconocerlo la próxima vez
       const nuevos = alias.filter(a => !(p.alias||[]).includes(a)), cambios = {};
-      if(nuevos.length){ cambios.alias = [...(p.alias||[]), ...nuevos]; cambios.presentaciones = {...(p.presentaciones||{}), [uc]: toNum(l.factor) || 1}; }
+      if(l.empaque && !(p.presentaciones||{})[l.empaque.unidad]) cambios.presentaciones = {...(p.presentaciones||{}), ...presL};
+      if(nuevos.length){ cambios.alias = [...(p.alias||[]), ...nuevos]; cambios.presentaciones = {...(p.presentaciones||{}), ...presL}; }
       if(!p.marca && l.marca) cambios.marca = l.marca;
       if(!p.linea && l.linea) cambios.linea = l.linea;
       if(Object.keys(cambios).length){ await actualizar("productos", p.id, cambios); Object.assign(p, cambios); }
