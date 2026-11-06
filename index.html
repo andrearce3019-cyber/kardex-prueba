@@ -726,7 +726,7 @@ async function leerBoletaPedido(){
     toast(`Leí ${items.length} líneas${res.revisada ? " (revisadas dos veces)" : ""}. Revisa y guarda el pedido.`);
   }catch(e){
     d.error = ({falta_api_key:"La lectura no está activada: falta la clave gratuita de Gemini en Supabase.", api_key_invalida:"La clave de Gemini no es válida.",
-      limite:"Se alcanzó el límite gratuito por ahora. Espera un minuto e intenta otra vez.", no_json:"No pude entender la boleta. Toma la foto más de cerca, completa y con buena luz.", clave:"La clave de la tienda no es válida. Vuelve a entrar."})[e?.error]
+      lento:"Google está muy ocupado en este momento. Espera un minuto y toca Leer otra vez.", conexion:"Google está saturado en este momento. Espera un minuto y toca Leer otra vez.", limite:"Se alcanzó el límite gratuito por ahora. Espera un minuto e intenta otra vez.", no_json:"No pude entender la boleta. Toma la foto más de cerca, completa y con buena luz.", clave:"La clave de la tienda no es válida. Vuelve a entrar."})[e?.error]
       || "No se pudo leer la boleta por un problema de conexión. Intenta de nuevo.";
   }finally{ d.leyendo = false; render(); }
 }
@@ -939,7 +939,7 @@ async function leerBoleta(){
     d.error = ({
       falta_api_key:"La lectura todavía no está activada: falta pegar la clave gratuita de Gemini en Supabase. Mientras tanto, llena el cuadro a mano.",
       api_key_invalida:"La clave de Gemini no es válida. Revisa que la hayas copiado completa.",
-      limite:"Se alcanzó el límite gratuito de lecturas por ahora. Espera un minuto e intenta otra vez.",
+      lento:"Google está muy ocupado en este momento. Espera un minuto y toca Leer otra vez.", conexion:"Google está saturado en este momento. Espera un minuto y toca Leer otra vez.", limite:"Se alcanzó el límite gratuito de lecturas por ahora. Espera un minuto e intenta otra vez.",
       no_json:"No pude entender la boleta. Toma la foto más de cerca, completa y con buena luz.",
       clave:"La clave de la tienda no es válida. Vuelve a entrar."
     })[e?.error] || "No se pudo leer la boleta por un problema de conexión. Intenta de nuevo.";
