@@ -184,7 +184,7 @@ const S = {
   view: (location.hash || "#inicio").slice(1), f: {q:"", linea:"", marca:"", prov:""},
   venta: {q:"", sel:null, cant:1, precio:""}, pedido: null, rec: null, abierto: null
 };
-const VIEWS = ["inicio","vender","pedidos","recibir","inventario","creditos","proveedores","mas"];
+const VIEWS = ["inicio","vender","pedidos","recibir","inventario","compras","creditos","proveedores","mas"];
 if(!VIEWS.includes(S.view)) S.view = "inicio";
 
 // ---------- Utilidades ----------
@@ -306,9 +306,9 @@ const ICON = {
   mas:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>'
 };
 function pintarNav(){
-  const tabs = [["inicio","Inicio"],["vender","Vender"],["pedidos","Pedidos"],["recibir","Recibir mercadería"],["inventario","Inventario"],["creditos","Créditos"],["proveedores","Proveedores"]];
+  const tabs = [["inicio","Inicio"],["vender","Vender"],["pedidos","Pedidos"],["recibir","Recibir mercadería"],["inventario","Inventario"],["compras","Compras"],["creditos","Créditos"],["proveedores","Proveedores"],["mas","Más"]];
   $("#tabs").innerHTML = tabs.map(([v,t]) => `<button data-go="${v}" aria-current="${S.view===v}">${t}</button>`).join("");
-  const enMas = ["inventario","creditos","proveedores","mas"].includes(S.view);
+  const enMas = ["inventario","compras","creditos","proveedores","mas"].includes(S.view);
   $("#bottom").innerHTML = [["inicio","Inicio"],["vender","Vender"],["pedidos","Pedidos"],["recibir","Recibir"],["mas","Más"]]
     .map(([v,t]) => `<button data-go="${v}" aria-current="${v==="mas" ? enMas : S.view===v}">${ICON[v]}<span>${t}</span></button>`).join("");
 }
@@ -321,7 +321,7 @@ function render(){
   if(!S.clave){ $("#tabs").innerHTML = ""; $("#bottom").innerHTML = ""; m.innerHTML = vistaLogin(); return; }
   pintarNav();
   if(!S.conectado){ m.innerHTML = `<div class="card empty"><span class="spin"></span><p>Cargando tu tienda…</p></div>`; return; }
-  const V = {inicio:vistaInicio, vender:vistaVender, pedidos:vistaPedidos, recibir:vistaRecibir, inventario:vistaInventario, creditos:vistaCreditos, proveedores:vistaProveedores, mas:vistaMas};
+  const V = {inicio:vistaInicio, vender:vistaVender, pedidos:vistaPedidos, recibir:vistaRecibir, inventario:vistaInventario, compras:vistaCompras, creditos:vistaCreditos, proveedores:vistaProveedores, mas:vistaMas};
   m.innerHTML = V[S.view]();
 }
 
@@ -499,12 +499,13 @@ function vistaRecibir(){
     const pend = S.pedidos.filter(p => ["pendiente","parcial"].includes(p.estado));
     return `<div><h1>Recibir mercadería</h1><p class="sub">Registra lo que llegó. Si viene de un pedido, elígelo para marcar lo que faltó.</p></div>
     ${pend.length ? `<section class="card"><h2>¿Es de un pedido?</h2>${pend.map(pe => `<button class="alerta info" style="all:unset;box-sizing:border-box;cursor:pointer;display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;padding:12px;border-radius:10px;background:var(--soft)" data-act="recibir-pedido" data-id="${pe.id}"><span class="dot" style="width:10px;height:10px;border-radius:50%;background:var(--accent)"></span><span><b>${esc(prov(pe.proveedor_id)?.nombre || "Proveedor")}</b> · pedido ${fecha(pe.fecha)}${pe.estado==="parcial" ? " · falta una parte" : ""}</span><span class="btn sm">Elegir</span></button>`).join("")}</section>` : ""}
-    <section class="card"><h2>${pend.length ? "O sin pedido" : "Sin pedido"}</h2><p class="sub" style="margin:0">Compra directa o reparto que no anotaste como pedido.</p><button class="btn primary" data-act="recibir-directo">Recibir sin pedido</button></section>`;
+    <section class="card"><h2>${pend.length ? "O sin pedido" : "Sin pedido"}</h2><p class="sub" style="margin:0">Compra directa o reparto que no anotaste como pedido.</p><button class="btn primary" data-act="recibir-directo">Recibir sin pedido</button></section>
+    ${S.recepciones.length ? `<button class="btn" data-go="compras">Ver, revisar o borrar compras registradas (${S.recepciones.length})</button>` : ""}`;
   }
   const d = S.rec, pe = S.pedidos.find(p => p.id === d.pedidoId);
   return `<div class="row between"><div><h1>Recibir mercadería</h1><p class="sub">${pe ? `Pedido a <b>${esc(prov(pe.proveedor_id)?.nombre || "")}</b> del ${fecha(pe.fecha)}` : "Sin pedido"}</p></div><button class="btn" data-act="descartar-rec">Descartar</button></div>
   <section class="card">
-    <div><h2>1. Foto de la boleta</h2><p class="sub">Claude lee los productos, cantidades, precios, bonificaciones y si es a crédito. Tú revisas antes de guardar.</p></div>
+    <div><h2>1. Foto de la boleta</h2><p class="sub">La app transcribe la foto aquí mismo, gratis. Revisa el texto y los productos y corrige lo que haga falta antes de guardar.</p></div>
     <div class="drop">
       ${d.url ? `<img src="${d.url}" alt="Foto de la boleta">` : `<p class="muted" style="margin:0">Boleta completa, derecha y con buena luz.</p>`}
       <div class="row" style="justify-content:center">
@@ -512,10 +513,15 @@ function vistaRecibir(){
         <input id="foto" type="file" accept="image/*" hidden>
         ${d.url ? (d.leyendo ? `<button class="btn primary" disabled><span class="spin"></span> Leyendo boleta…</button>` : `<button class="btn primary" data-act="leer">${d.leida ? "Leer otra vez" : "Leer boleta"}</button>`) : ""}
       </div>
-      ${d.leyendo ? `<p class="small muted" style="margin:0">Leyendo con cuidado cada línea; puede tardar hasta un minuto.</p>` : ""}
+      ${d.leyendo ? `<p class="small muted" style="margin:0" id="ocr-prog">Preparando el lector (la primera vez tarda un poco más)…</p>` : ""}
       ${d.error ? `<div class="banner bad">${d.error}</div>` : ""}
       ${d.dudas?.length ? `<div class="banner">Revisa: ${d.dudas.map(esc).join(" · ")}</div>` : ""}
     </div>
+    ${d.texto ? `<details><summary style="cursor:pointer;font-weight:600">Ver y corregir el texto leído</summary>
+      <p class="small muted" style="margin:6px 0">Cada producto debe quedar en una línea: código, descripción, unidad, cantidad, precio e importe. Corrige lo que se leyó mal y toca el botón.</p>
+      <textarea id="ocr-texto" rows="12" style="font-family:var(--f-mono);font-size:.8rem">${esc(d.texto)}</textarea>
+      <button class="btn" data-act="reinterpretar" style="margin-top:8px">Volver a llenar los productos con este texto</button>
+    </details>` : ""}
   </section>
   <section class="card" id="paso2">
     <h2>2. Datos de la boleta</h2>
@@ -558,6 +564,7 @@ function vistaGrupo(g, gi){
       <label class="f">Lo vendo por<select data-g="${gi}" data-nf="unidadVenta">${UNIDADES.map(x => `<option ${x===g.nuevo.unidadVenta?"selected":""}>${x}</option>`).join("")}</select></label>
     </div>` : ""}
     ${dup.length ? `<div class="banner">Ya tienes <b>${esc(dup[0].nombre)}</b>. Si es el mismo, elígelo arriba para no duplicarlo.</div>` : ""}
+    ${!p && S.rec.grupos.length > 1 ? `<label class="f">¿Es el mismo producto que otro de esta boleta?<select data-g="${gi}" data-gf="juntar"><option value="">No, es distinto</option>${S.rec.grupos.map((o,oi) => oi === gi ? "" : `<option value="${oi}">Sí, juntar con: ${esc(prod(o.productoId)?.nombre || o.nuevo.nombre || "producto "+(oi+1))}</option>`).join("")}</select></label>` : ""}
     ${g.lineas.map((l,li) => `<div class="linea">
       ${l.descripcion ? `<div class="desc">${esc(l.descripcion)}</div>` : ""}
       <label class="f">Llegó<input data-g="${gi}" data-l="${li}" data-lf="cantidad" inputmode="decimal" value="${esc(l.cantidad)}"></label>
@@ -598,39 +605,78 @@ function nuevaRecepcion(pedidoId){
   S.rec = d; ir("recibir");
 }
 
-// Fotos: la boleta completa y dos acercamientos para leer mejor la letra matricial
+// Lectura gratis en el propio equipo (OCR con Tesseract, sin cuentas ni cobros)
 function cargarImagen(file){ return new Promise((ok, mal) => { const fr = new FileReader(); fr.onload = () => { const im = new Image(); im.onload = () => ok({im, url: fr.result}); im.onerror = mal; im.src = fr.result; }; fr.onerror = mal; fr.readAsDataURL(file); }); }
-function recorte(im, y0, y1, lado = 1600){
-  const sw = im.naturalWidth, sh = Math.round(im.naturalHeight*(y1-y0)), sy = Math.round(im.naturalHeight*y0);
-  const k = Math.min(1, lado/Math.max(sw, sh)); const c = document.createElement("canvas");
-  c.width = Math.round(sw*k); c.height = Math.round(sh*k);
-  c.getContext("2d").drawImage(im, 0, sy, sw, sh, 0, 0, c.width, c.height);
-  return {media_type:"image/jpeg", data: c.toDataURL("image/jpeg", 0.88).split(",")[1]};
+function cargarTesseract(){
+  if(window.Tesseract) return Promise.resolve();
+  return new Promise((ok, mal) => { const s = document.createElement("script"); s.src = "https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js"; s.onload = ok; s.onerror = mal; document.head.appendChild(s); });
+}
+// Usa el canal rojo: el rosado de la boleta se vuelve blanco y la tinta negra queda oscura
+function prepararOCR(im){
+  const k = Math.min(2, 2400/Math.max(im.naturalWidth, im.naturalHeight));
+  const c = document.createElement("canvas"); c.width = Math.round(im.naturalWidth*k); c.height = Math.round(im.naturalHeight*k);
+  const x = c.getContext("2d"); x.drawImage(im, 0, 0, c.width, c.height);
+  const d = x.getImageData(0, 0, c.width, c.height), p = d.data;
+  for(let i = 0; i < p.length; i += 4){ const v = Math.max(0, Math.min(255, (p[i]-70)*1.9)); p[i] = p[i+1] = p[i+2] = v; }
+  x.putImageData(d, 0, 0); return c;
+}
+function numPE(s){
+  s = String(s).replace(/[Oo]/g,"0").replace(/[lI]/g,"1");
+  s = /,\d{2}$/.test(s) && !/\.\d{2}$/.test(s) ? s.replace(/\./g,"").replace(",",".") : s.replace(/,/g,"");
+  return toNum(s);
+}
+const UNI_RX = /^(UND|UNI|UN|U|CAJA|CJA|CJ|POTE|POT|PQT|PAQ|BOL|BOLSA|DOC|TIRA|PACK|PK|KG|LT|GLN|GAL|FARDO|DISP)$/;
+const nombreBonito = s => s.toLowerCase().replace(/(^|\s)\S/g, c => c.toUpperCase());
+// Convierte el texto leído en el mismo formato que usa el formulario de revisión
+function interpretar(texto){
+  const r = {proveedor:"", ruc:"", documento:"", fecha:"", total:0, condicion:"", dias_credito:0, items:[], dudas:[]};
+  const lineas = texto.split(/\n/).map(l => l.replace(/[|_]/g," ").replace(/\s+/g," ").trim()).filter(Boolean);
+  for(const l of lineas){
+    if(!r.proveedor && /S\.?\s?A\.?\s?C\b|E\.?I\.?R\.?L|S\.A\./i.test(l)) r.proveedor = l.replace(/\s*R\.?U\.?C.*$/i,"").trim();
+    if(!r.documento){ const m = l.match(/\b([A-Z]{1,2}[0-9O]{2,3})\s?-\s?([0-9O]{6,8})\b/); if(m) r.documento = m[1].replace(/O/g,"0")+"-"+m[2].replace(/O/g,"0"); }
+    if(!r.fecha){ const m = l.match(/\b(\d{2})[\/\-.](\d{2})[\/\-.](\d{4})\b/); if(m) r.fecha = `${m[3]}-${m[2]}-${m[1]}`; }
+    if(!r.ruc){ const m = l.match(/\b(10|20)\d{9}\b/); if(m) r.ruc = m[0]; }
+    if(/CR[EÉ]DITO/i.test(l)){ r.condicion = "credito"; const m = l.match(/(\d{1,3})\s*D[IÍ]AS/i); if(m) r.dias_credito = +m[1]; }
+    else if(!r.condicion && /CONTADO/i.test(l)) r.condicion = "contado";
+    if(/TOTAL|PAGAR/i.test(l)){ const ns = l.match(/\d[\d.,]*[.,]\d{2}\b/g); if(ns){ const v = numPE(ns[ns.length-1]); if(v > r.total) r.total = v; } }
+    const m = l.match(/^(\d{5,7})\s+(.*)$/);
+    if(!m) continue;
+    const tok = m[2].split(" "), nums = [];
+    while(tok.length && /^[\d.,O]+$/.test(tok[tok.length-1]) && nums.length < 3) nums.unshift(tok.pop());
+    if(nums.length < 2){ r.dudas.push(`no pude leer los números de "${l.slice(0,40)}"`); continue; }
+    let unidad = "UN"; if(tok.length && UNI_RX.test(tok[tok.length-1].toUpperCase())) unidad = tok.pop().toUpperCase();
+    unidad = unidad.replace(/^(CJ|CJA)$/,"CAJA").replace(/^(UNI|U)$/,"UN").replace(/^POT$/,"POTE");
+    const desc = tok.join(" ");
+    let cant, pu, imp;
+    if(nums.length === 3) [cant, pu, imp] = nums.map(numPE); else { cant = numPE(nums[0]); imp = numPE(nums[1]); pu = cant ? imp/cant : 0; }
+    const bon = imp === 0 || /GRAT|BONIF|OBSEQ/i.test(desc);
+    if(!bon && Math.abs(cant*pu - imp) > Math.max(0.1, imp*0.03)) r.dudas.push(`${desc.slice(0,28)}: ${num(cant,2)} × ${num(pu,2)} no da ${num(imp,2)}`);
+    const f = desc.match(/(\d+)\s?[*xX×]\s?[\d.,]+\s?U/) || desc.match(/(\d+)\s?U\b/i);
+    const factor = ["CAJA","POTE","PAQ","PQT","PACK","FARDO","DISP"].includes(unidad) && f ? +f[1] : 1;
+    r.items.push({codigo:m[1], descripcion:desc, cantidad:cant, unidadCompra:unidad, precioUnit:pu, importe:imp, bonificacion:bon, productoKey:"", factor, nuevo:{nombre:nombreBonito(desc)}});
+  }
+  if(r.total && r.items.length){ const s = r.items.reduce((a,i) => a+i.importe, 0); if(Math.abs(s - r.total) > 0.05) r.dudas.unshift(`los importes suman ${soles(s)} y el total dice ${soles(r.total)}`); }
+  return r;
 }
 async function leerBoleta(){
   const d = S.rec; if(!d?.img) return;
   d.leyendo = true; d.error = ""; render();
   try{
-    const imagenes = [recorte(d.img,0,1), recorte(d.img,0,0.58), recorte(d.img,0.42,1)];
-    const productos = S.productos.map(p => ({id:p.id, nombre:p.nombre, marca:p.marca, unidadVenta:p.unidad_venta, presentaciones:p.presentaciones, alias:(p.alias||[]).slice(0,6)}));
-    const r = await fetch(`${SB_URL}/functions/v1/leer-boleta`, {method:"POST", headers:{apikey:SB_KEY, "Content-Type":"application/json", "x-clave-tienda":S.clave}, body: JSON.stringify({imagenes, productos})});
-    const res = await r.json().catch(() => ({error:"conexion"}));
-    if(!r.ok || res.error) throw res;
-    aplicarLectura(res);
+    await cargarTesseract();
+    const w = await Tesseract.createWorker("spa", 1, {logger: m => { const el = $("#ocr-prog"); if(el && m.status === "recognizing text") el.textContent = `Leyendo la boleta… ${Math.round(m.progress*100)}%`; }});
+    await w.setParameters({tessedit_pageseg_mode: "4", preserve_interword_spaces: "1"});
+    const {data} = await w.recognize(prepararOCR(d.img));
+    await w.terminate();
+    d.texto = data.text || "";
+    const r = interpretar(d.texto);
+    aplicarLectura(r);
     d.leida = true;
-    toast(`Leí ${res.items?.length || 0} líneas${res.revisada ? " (revisadas dos veces)" : ""}. Revisa y guarda.`);
+    toast(r.items.length ? `Leí ${r.items.length} líneas. Revisa cada una y corrige lo que haga falta.` : "No encontré líneas de productos. Corrige el texto leído o llénalas a mano.");
     setTimeout(() => $("#paso2")?.scrollIntoView({behavior:"smooth"}), 60);
-  }catch(e){
-    d.error = ({
-      falta_api_key:"La lectura de fotos aún no está activada: falta poner la clave de API de Anthropic en Supabase. Mientras tanto, llena los productos a mano.",
-      api_key_invalida:"La clave de API de Anthropic no es válida o no tiene saldo. Revísala en Supabase.",
-      ocupado:"El servicio está ocupado. Espera un minuto e intenta otra vez.",
-      no_json:"No pude entender la boleta. Toma la foto más de cerca, derecha y con más luz.",
-      rechazada:"No se pudo procesar esta imagen. Prueba con otra foto.",
-      clave:"La clave de la tienda no es válida. Vuelve a entrar."
-    })[e?.error] || "No se pudo leer la boleta por un problema de conexión. Intenta de nuevo.";
-  }finally{ d.leyendo = false; render(); }
+  }catch(e){ d.error = "No se pudo leer la foto. La primera vez el lector se descarga: revisa tu internet e intenta de nuevo, o llena los productos a mano."; }
+  finally{ d.leyendo = false; render(); }
 }
+const porAliasParecido = desc => S.productos.find(p => [p.nombre, ...(p.alias||[])].some(a => parecido(a, desc) >= 0.8));
 function aplicarLectura(r){
   const d = S.rec;
   if(r.proveedor && !d.pedidoId) d.proveedor = (S.proveedores.find(p => parecido(p.nombre, r.proveedor) >= 0.6)?.nombre) || r.proveedor;
@@ -639,7 +685,8 @@ function aplicarLectura(r){
   d.documento = r.documento || d.documento; d.total = toNum(r.total) || d.total;
   if(r.condicion === "credito"){ d.condicion = "credito"; if(toNum(r.dias_credito) > 0) d.dias = toNum(r.dias_credito); }
   else if(r.condicion === "contado") d.condicion = "contado";
-  d.dudas = Array.isArray(r.dudas) ? r.dudas.slice(0,5) : [];
+  d.dudas = Array.isArray(r.dudas) ? r.dudas.slice(0,6) : [];
+  if(!(r.items || []).length) return;
   // Del pedido quedan los grupos; la boleta reemplaza sus líneas y agrega lo que no se pidió
   const base = d.grupos.filter(g => g.pedidoUnidades);
   base.forEach(g => g.lineas = []);
@@ -647,7 +694,7 @@ function aplicarLectura(r){
   const nuevos = [];
   for(const it of (r.items || [])){
     const desc = String(it.descripcion || "").trim();
-    const ex = S.productos.find(p => p.id === it.productoKey) || porAlias(desc);
+    const ex = S.productos.find(p => p.id === it.productoKey) || porAlias(desc) || porAliasParecido(desc);
     const clave = ex ? "p:"+ex.id : "k:"+(it.productoKey || norm(desc)), cd = "d:"+norm(desc);
     let g = porClave.get(clave) || porClave.get(cd);
     if(!g){ const nv = it.nuevo || {};
@@ -740,6 +787,35 @@ function renderFicha(){
 }
 function cerrarFicha(){ S.abierto = null; $("#overlayRoot").innerHTML = ""; }
 
+// ----- Compras registradas (con borrado por boleta y por día) -----
+function vistaCompras(){
+  const porDia = {}; S.recepciones.forEach(r => (porDia[r.fecha] ??= []).push(r));
+  const dias = Object.keys(porDia).sort().reverse();
+  return `<div class="row between"><div><h1>Compras registradas</h1><p class="sub">Todo lo que entró al inventario, por día. Puedes borrar una boleta o un día completo, por ejemplo tus pruebas.</p></div><button class="btn primary" data-go="recibir">+ Recibir mercadería</button></div>
+  ${dias.length ? dias.map(f => { const rs = porDia[f], tot = rs.reduce((a,r) => a+toNum(r.total), 0);
+    return `<section class="card">
+      <div class="row between"><h2>${fechaLarga(f)}</h2><span class="row"><b class="num">${soles(tot)}</b><button class="btn sm danger" data-act="borrar-dia" data-f="${f}">Borrar este día</button></span></div>
+      ${rs.map(r => { const its = S.ritems.filter(i => i.recepcion_id === r.id); return `<details style="border-top:1px solid var(--line);padding-top:8px">
+        <summary class="row between" style="cursor:pointer;list-style:none"><span><b>${esc(prov(r.proveedor_id)?.nombre || "—")}</b> <span class="mono muted">${esc(r.documento || "")}</span><br><span class="small muted">${its.length} líneas · ${r.condicion === "credito" ? "crédito" : "contado"}${r.origen === "foto" ? " · leída de foto" : ""}</span></span><b class="num">${soles(r.total)}</b></summary>
+        <div class="tbl" style="margin-top:8px"><table><thead><tr><th>Producto</th><th class="r">Llegó</th><th class="r">Importe</th></tr></thead><tbody>
+          ${its.map(i => `<tr><td>${esc(prod(i.producto_id)?.nombre || "—")}${i.bonificacion ? ' <span class="pill bonus">Bonif.</span>' : ""}${i.observacion ? ` <span class="pill warn">${esc(i.observacion)}</span>` : ""}</td><td class="r">${num(i.cantidad,2)} ${esc(i.unidad_compra)}</td><td class="r">${soles(i.importe)}</td></tr>`).join("")}
+        </tbody></table></div>
+        <div class="row" style="justify-content:flex-end;padding:8px 0"><button class="btn sm danger" data-act="borrar-rec" data-id="${r.id}">Borrar esta boleta</button></div>
+      </details>`; }).join("")}
+    </section>`; }).join("") : `<div class="card empty"><p>No hay compras registradas.</p></div>`}`;
+}
+const rangoDia = f => { const a = new Date(f+"T00:00:00"), b = new Date(f+"T00:00:00"); b.setDate(b.getDate()+1); return [a.toISOString(), b.toISOString()].map(encodeURIComponent); };
+// Después de borrar: los pedidos vuelven a su estado real y se quitan productos sin ningún movimiento
+async function limpiarHuerfanos(){
+  await cargar();
+  for(const pe of S.pedidos){ if(!["recibido","parcial"].includes(pe.estado)) continue;
+    const a = avancePedido(pe), est = a.recepciones === 0 ? "pendiente" : a.lineas.every(l => l.pendiente <= 0) ? "recibido" : "parcial";
+    if(est !== pe.estado) await actualizar("pedidos", pe.id, {estado:est}); }
+  const usados = new Set([...S.ritems, ...S.pitems].map(i => i.producto_id));
+  for(const p of S.productos) if(!usados.has(p.id)){ try{ await borrar("productos", p.id); }catch{} }
+}
+async function confirmar(t, texto){ if(t.dataset.ok === "1") return true; t.dataset.ok = "1"; t.dataset.txt = t.textContent; t.textContent = texto; setTimeout(() => { if(t.isConnected){ t.dataset.ok = ""; t.textContent = t.dataset.txt; } }, 5000); return false; }
+
 // ----- Créditos -----
 function vistaCreditos(){
   const pend = S.recepciones.filter(r => r.condicion === "credito" && !r.pagado).sort((a,b) => (a.vence||"").localeCompare(b.vence||""));
@@ -769,11 +845,17 @@ function vistaMas(){
   return `<div><h1>Más</h1></div>
   <section class="card">
     <button class="btn big" data-go="inventario">Inventario general</button>
+    <button class="btn big" data-go="compras">Compras registradas</button>
     <button class="btn big" data-go="creditos">Créditos con proveedores</button>
     <button class="btn big" data-go="proveedores">Proveedores</button>
   </section>
   <section class="card"><h2>WhatsApp para los avisos</h2><p class="sub" style="margin:0">Número que recibe el resumen (con código de país, ej. 51987654321). Si lo dejas vacío, WhatsApp te deja elegir el contacto.</p>
     <div class="row"><input id="wa-num" class="grow" inputmode="tel" value="${esc(LS.get("kardex-wa") || "")}" placeholder="51…"><button class="btn" data-act="guardar-wa">Guardar</button></div></section>
+  <section class="card"><h2>Borrar datos de prueba</h2>
+    <p class="sub" style="margin:0">Borra todo lo registrado en una fecha: compras, ventas, pedidos y conteos. Los productos que queden sin ningún movimiento también se borran.</p>
+    <div class="row"><input type="date" id="del-fecha" value="${hoy()}" style="width:auto"><button class="btn danger" data-act="borrar-fecha">Borrar lo de esa fecha</button></div>
+    <div class="row" style="border-top:1px solid var(--line);padding-top:12px"><span class="small muted grow">Para empezar con la tienda limpia, sin nada:</span><button class="btn danger" data-act="borrar-todo">Borrar TODO</button></div>
+  </section>
   <section class="card"><h2>Este equipo</h2><button class="btn danger" data-act="salir">Cerrar sesión en este equipo</button></section>`;
 }
 
@@ -819,6 +901,25 @@ document.addEventListener("click", async e => {
     else if(a === "add-linea"){ S.rec.grupos[+t.dataset.g].lineas.push(lineaVacia()); render(); }
     else if(a === "del-linea"){ const g = S.rec.grupos[+t.dataset.g]; g.lineas.splice(+t.dataset.l, 1); if(!g.lineas.length && !g.pedidoUnidades) S.rec.grupos.splice(+t.dataset.g, 1); if(!S.rec.grupos.length) S.rec.grupos.push(grupoVacio()); render(); }
     else if(a === "guardar-rec") await guardarRecepcion(t);
+    else if(a === "reinterpretar"){ const r = interpretar(S.rec.texto || ""); aplicarLectura(r); render(); toast(r.items.length ? `Productos actualizados: ${r.items.length} líneas.` : "No encontré líneas de productos en el texto."); }
+    // Borrar pruebas
+    else if(a === "borrar-rec"){ if(!await confirmar(t, "¿Seguro? Tocar otra vez")) return; t.disabled = true; await borrar("recepciones", id); await limpiarHuerfanos(); await refrescar(true); toast("Boleta borrada. El stock se recalculó."); }
+    else if(a === "borrar-dia"){ if(!await confirmar(t, "¿Borrar todo el día? Tocar otra vez")) return; t.disabled = true; await api(`recepciones?fecha=eq.${t.dataset.f}`, {method:"DELETE"}); await limpiarHuerfanos(); await refrescar(true); toast(`Compras del ${fecha(t.dataset.f)} borradas.`); }
+    else if(a === "borrar-fecha"){
+      const f = $("#del-fecha").value; if(!f){ toast("Elige una fecha."); return; }
+      if(!await confirmar(t, `¿Borrar todo lo del ${fecha(f)}? Tocar otra vez`)) return; t.disabled = true;
+      const [ini, fin] = rangoDia(f);
+      await api(`ventas?creado=gte.${ini}&creado=lt.${fin}`, {method:"DELETE"});
+      await api(`ajustes?creado=gte.${ini}&creado=lt.${fin}`, {method:"DELETE"});
+      await api(`recepciones?fecha=eq.${f}`, {method:"DELETE"});
+      await api(`pedidos?fecha=eq.${f}`, {method:"DELETE"});
+      await limpiarHuerfanos(); await refrescar(true); toast(`Se borró todo lo del ${fecha(f)}.`);
+    }
+    else if(a === "borrar-todo"){
+      if(!await confirmar(t, "¿Seguro? Se borra TODO. Tocar otra vez")) return; t.disabled = true;
+      for(const tabla of ["ventas","ajustes","recepciones","pedidos","productos","proveedores"]) await api(`${tabla}?id=not.is.null`, {method:"DELETE"});
+      S.rec = null; S.pedido = null; await refrescar(true); toast("Listo: la tienda quedó vacía.");
+    }
     // Ficha, créditos, proveedores
     else if(a === "guardar-conteo"){
       const p = prod(S.abierto), v = $("#conteo").value.trim(); if(v === ""){ toast("Escribe la cantidad que contaste."); return; }
@@ -861,6 +962,7 @@ document.addEventListener("input", e => {
   if(t.id === "f-q"){ S.f.q = t.value; const pos = t.selectionStart; render(); const n = $("#f-q"); n.focus(); n.setSelectionRange(pos,pos); return; }
   if(t.id === "v-q"){ S.venta.q = t.value; $("#tiles").innerHTML = tilesVenta(); return; }
   if(t.id === "v-cant" || t.id === "v-precio"){ S.venta[t.id === "v-cant" ? "cant" : "precio"] = t.value; $("#v-total").textContent = soles(toNum(S.venta.cant)*toNum(S.venta.precio)); return; }
+  if(t.id === "ocr-texto"){ if(S.rec) S.rec.texto = t.value; return; }
   if(t.dataset.pf){ S.pedido[t.dataset.pf] = t.value; return; }
   if(t.dataset.pl !== undefined){ S.pedido.lineas[+t.dataset.pl][t.dataset.k] = t.value; if(t.dataset.k === "nombre"){ const p = porNombre(t.value); if(p){ const big = Object.entries(p.presentaciones||{}).sort((a,b) => b[1]-a[1])[0]; if(big){ S.pedido.lineas[+t.dataset.pl].unidad = big[0]; S.pedido.lineas[+t.dataset.pl].factor = big[1]; } } } return; }
   const d = S.rec; if(!d) return;
@@ -887,7 +989,9 @@ document.addEventListener("change", async e => {
   }
   const d = S.rec; if(!d || t.dataset.g === undefined) return;
   const g = d.grupos[+t.dataset.g]; if(!g) return;
-  if(t.dataset.gf === "productoId"){ g.productoId = t.value; const p = prod(t.value); if(p) g.lineas.forEach(l => { const f = p.presentaciones?.[String(l.unidadCompra).toUpperCase().trim()]; if(f) l.factor = f; }); render(); }
+  if(t.dataset.gf === "juntar"){ if(t.value === "") return; const gi = +t.dataset.g, dest = d.grupos[+t.value];
+    dest.lineas.push(...g.lineas); dest.pedidoUnidades = dest.pedidoUnidades || g.pedidoUnidades; d.grupos.splice(gi, 1); render(); toast("Líneas juntadas en un solo producto."); }
+  else if(t.dataset.gf === "productoId"){ g.productoId = t.value; const p = prod(t.value); if(p) g.lineas.forEach(l => { const f = p.presentaciones?.[String(l.unidadCompra).toUpperCase().trim()]; if(f) l.factor = f; }); render(); }
   else if(t.dataset.nf === "nombre") render();
   else if(t.dataset.nf){ g.nuevo[t.dataset.nf] = t.value; render(); }
   else if(t.dataset.lf === "bonificacion") g.lineas[+t.dataset.l].bonificacion = t.checked;
