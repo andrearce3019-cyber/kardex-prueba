@@ -1562,9 +1562,10 @@ function vistaCreditos(){
   const total = pend.reduce((a,r) => a+toNum(r.total), 0);
   return `<div class="row between"><div><h1>Créditos con proveedores</h1><p class="sub">Compras a crédito que falta pagar · ${soles(total)}</p></div>
     ${pend.length ? `<button class="btn wa" data-act="wa-creditos">${waIcon()} Avisar por WhatsApp</button>` : ""}</div>
-  <section class="card">${pend.length ? `<div class="tbl"><table><thead><tr><th>Proveedor</th><th>Boleta</th><th class="r">Monto</th><th>Vence</th><th></th></tr></thead><tbody>
-    ${pend.map(r => { const e = estadoCredito(r); return `<tr><td><b>${esc(prov(r.proveedor_id)?.nombre || "—")}</b><br><span class="small muted">Recibido ${fecha(r.fecha)} · ${r.dias_credito} días</span></td><td class="mono">${esc(r.documento || "—")}</td><td class="r"><b>${soles(r.total)}</b></td><td><span class="pill ${e.cls}">${e.txt}</span></td><td class="r"><button class="btn sm" data-act="pagar" data-id="${r.id}">Marcar pagado</button></td></tr>`; }).join("")}
-  </tbody></table></div>` : `<p class="muted" style="margin:0">No hay créditos pendientes.</p>`}</section>
+  <section class="card">${pend.length ? `<div class="cumpl">
+    ${pend.map(r => { const e = estadoCredito(r); return `<div class="cumpl-f" style="flex-wrap:wrap"><div style="min-width:0;flex:1 1 180px"><b>${esc(prov(r.proveedor_id)?.nombre || "—")}</b><div class="small muted">Boleta <span class="mono">${esc(r.documento || "—")}</span> · recibido ${fecha(r.fecha)} · ${r.dias_credito} días</div><span class="pill ${e.cls}" style="margin-top:6px">${e.txt}</span></div>
+      <div style="display:grid;justify-items:end;gap:6px"><b class="num" style="font-size:1.15rem;white-space:nowrap">${soles(r.total)}</b><button class="btn sm" style="white-space:nowrap" data-act="pagar" data-id="${r.id}">✓ Marcar pagado</button></div></div>`; }).join("")}
+  </div>` : `<p class="muted" style="margin:0">No hay créditos pendientes.</p>`}</section>
   ${pagados.length ? `<section class="card"><h2>Pagados</h2><div class="tbl"><table><tbody>${pagados.map(r => `<tr><td>${esc(prov(r.proveedor_id)?.nombre || "—")}</td><td class="r">${soles(r.total)}</td><td class="r">pagado ${fecha(r.fecha_pago)}</td></tr>`).join("")}</tbody></table></div></section>` : ""}`;
 }
 
