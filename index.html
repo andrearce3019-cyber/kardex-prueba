@@ -342,6 +342,18 @@ tr.click:hover td{background:#F7FAFF}
   .filters select,.filters input{min-height:40px;font-size:.9rem;padding:7px 10px}
   h1{font-size:1.55rem}
 }
+#sug{position:absolute;z-index:50;background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:0 12px 30px rgba(27,34,54,.16);display:grid;padding:4px;max-height:340px;overflow-y:auto}
+#sug button{all:unset;box-sizing:border-box;cursor:pointer;display:grid;gap:2px;padding:9px 10px;border-radius:9px}
+#sug button:hover,#sug button:focus-visible{background:var(--accent-weak)}
+#sug small{color:var(--muted)}
+.sel-lista{display:grid;gap:4px;max-height:50vh;overflow-y:auto}
+.sel-item{display:flex;gap:10px;align-items:flex-start;padding:10px;border:1px solid var(--line);border-radius:10px;cursor:pointer}
+.sel-item input{margin-top:3px;accent-color:var(--accent)}
+.modo-pedido{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.modo-pedido button{all:unset;box-sizing:border-box;cursor:pointer;display:grid;gap:2px;padding:14px 16px;border-radius:14px;border:2px solid var(--line);background:var(--surface)}
+.modo-pedido button span{font-size:.85rem;color:var(--muted)}
+.modo-pedido button[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-weak)}
+.modo-pedido button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .cod{display:inline-block;font-family:var(--f-mono);font-size:.72rem;font-weight:500;color:var(--accent);background:var(--accent-weak);border-radius:6px;padding:1px 6px;margin-right:6px;vertical-align:1px}
 </style>
 </head>
@@ -753,8 +765,9 @@ function formPedido(){
   const d = S.pedido;
   const suma = d.lineas.reduce((a,l) => a + (l.bonif ? 0 : toNum(l.cantidad)*toNum(l.precio)), 0);
   return `<div class="row between"><div><h1>Nuevo pedido</h1><p class="sub">Sube la foto de la boleta y se llena sola, o escribe los productos. Cuando llegue el reparto, lo recibes en Recibir mercadería.</p></div><button class="btn" data-act="cancelar-pedido-form">Cancelar</button></div>
-  <div class="recibir-grid">
-    <aside class="card foto-lado">
+  <div class="modo-pedido"><button data-act="modo-pedido" data-v="foto" aria-pressed="${d.modo !== "manual"}"><b>📷 Con foto de la boleta</b><span>La app la lee y llena todo</span></button><button data-act="modo-pedido" data-v="manual" aria-pressed="${d.modo === "manual"}"><b>✍️ Escribir a mano</b><span>Tú digitas cada producto</span></button></div>
+  <div class="${d.modo === "manual" ? "" : "recibir-grid"}">
+    ${d.modo === "manual" ? "" : `<aside class="card foto-lado">
       <h2>📷 Foto de la boleta</h2>
       ${d.url ? `<img src="${d.url}" alt="Foto de la boleta" data-act="zoom-pedido">
         <div class="row"><button class="btn sm" data-act="zoom-pedido">Ampliar</button><button class="btn sm" data-act="girar-pedido">Girar ↻</button><label class="btn sm" for="foto-pedido">Cambiar foto</label></div>`
@@ -764,7 +777,7 @@ function formPedido(){
         : `<button class="btn primary" data-act="leer-pedido">${d.leida ? "Leer otra vez" : "✨ Leer boleta y llenar el pedido"}</button>`) : ""}
       ${d.dudas?.length ? `<div class="banner">Revisa: ${d.dudas.map(esc).join(" · ")}</div>` : ""}
       ${d.error ? `<div class="banner bad">${d.error}</div>` : ""}
-    </aside>
+    </aside>`}
     <div style="display:grid;gap:16px;min-width:0">
       <section class="card">
         <h2>Datos del pedido</h2>
@@ -782,21 +795,22 @@ function formPedido(){
       </section>
       <section class="card">
         <h2>Productos</h2>
+        <datalist id="dlUC">${UNIDADES_COMPRA.map(u => `<option value="${u}">`).join("")}</datalist>
         <datalist id="dlProd">${S.productos.map(p => `<option value="${esc(p.nombre)}">`).join("")}</datalist>
         <div class="tbl"><table class="boleta"><thead><tr><th>Producto</th><th>Lo vendes por</th><th>Lo compras en</th><th class="r" title="Cuántas unidades de venta trae cada empaque">Trae c/u</th><th class="r">Cantidad</th><th class="r">Precio S/</th><th>Bonif.</th><th></th></tr></thead><tbody>
           ${d.lineas.map((l,i) => { const p = porNombre(l.nombre); const dup = !p && l.nombre ? parecidos(l.nombre) : [];
-            return `<tr class="${l.bonif ? "bon" : ""}"><td class="prod" data-l="Producto"><input data-pl="${i}" data-k="nombre" list="dlProd" value="${esc(l.nombre)}" placeholder="Escribe o elige"><div class="hint">${p ? `<span class="muted"><span class="cod">${esc(p.codigo || "")}</span>Reconocido: ya está en tu inventario${p.marca || p.linea ? " · "+esc([p.marca, p.linea].filter(Boolean).join(" · ")) : ""}</span>` : l.nombre ? `<span style="color:var(--warn)">${dup.length ? "¿Es "+esc(dup[0].nombre)+"?" : "Producto nuevo"}</span>${l.marca || l.linea ? ` <span class="pill tag">${esc([l.marca, l.linea].filter(Boolean).join(" · "))}</span>` : ""}` : ""}${l.bonif ? ' <span class="pill bonus">Bonificación</span>' : ""}${l.nombre ? `<div class="muted">${num(toNum(l.cantidad),2)} ${esc(l.unidad || "UN")}${toNum(l.factor) !== 1 ? ` × ${num(toNum(l.factor),2)}` : ""} = entran <b>${num(toNum(l.cantidad)*toNum(l.factor),2)} ${esc(plural(p ? uv(p) : (l.unidadVenta || "unidad"), toNum(l.cantidad)*toNum(l.factor)))}</b></div>` : ""}</div></td>
+            return `<tr class="${l.bonif ? "bon" : ""}"><td class="prod" data-l="Producto"><input data-pl="${i}" data-k="nombre" autocomplete="off" value="${esc(l.nombre)}" placeholder="Escribe o elige"><div class="hint">${p ? `<span class="muted"><span class="cod">${esc(p.codigo || "")}</span>Reconocido: ya está en tu inventario${p.marca || p.linea ? " · "+esc([p.marca, p.linea].filter(Boolean).join(" · ")) : ""}</span>` : l.nombre ? `<span style="color:var(--warn)">${dup.length ? "¿Es "+esc(dup[0].nombre)+"?" : "Producto nuevo"}</span>${l.marca || l.linea ? ` <span class="pill tag">${esc([l.marca, l.linea].filter(Boolean).join(" · "))}</span>` : ""}` : ""}${l.bonif ? ' <span class="pill bonus">Bonificación</span>' : ""}${l.nombre ? `<div class="muted">${num(toNum(l.cantidad),2)} ${esc(l.unidad || "UN")}${toNum(l.factor) !== 1 ? ` × ${num(toNum(l.factor),2)}` : ""} = entran <b>${num(toNum(l.cantidad)*toNum(l.factor),2)} ${esc(plural(p ? uv(p) : (l.unidadVenta || "unidad"), toNum(l.cantidad)*toNum(l.factor)))}</b></div>` : ""}</div></td>
             <td data-l="Lo vendes por">${p ? `<span class="pill tag">${esc(uv(p))}</span>` : `<select data-pl="${i}" data-k="unidadVenta">${UNIDADES.map(u => `<option ${u===(l.unidadVenta||"unidad")?"selected":""}>${u}</option>`).join("")}</select>`}</td>
-            <td data-l="Lo compras en"><input data-pl="${i}" data-k="unidad" value="${esc(l.unidad)}" placeholder="CAJA"></td>
+            <td data-l="Lo compras en"><input data-pl="${i}" data-k="unidad" value="${esc(l.unidad)}" placeholder="Elige o escribe" list="dlUC"></td>
             <td class="n" data-l="Trae c/u"><input data-pl="${i}" data-k="factor" inputmode="decimal" value="${esc(l.factor)}" title="Unidades de venta que trae cada una"></td>
             <td class="n" data-l="Cantidad"><input data-pl="${i}" data-k="cantidad" inputmode="decimal" value="${esc(l.cantidad)}"></td>
             <td class="n" data-l="Precio S/"><input data-pl="${i}" data-k="precio" inputmode="decimal" value="${esc(l.precio ?? "")}" placeholder="0.00"></td>
             <td class="c" data-l="Bonif."><input type="checkbox" data-pl="${i}" data-k="bonif" ${l.bonif ? "checked" : ""} aria-label="Bonificación"></td>
-            <td class="c"><button class="btn sm" data-act="del-pl" data-i="${i}" aria-label="Quitar">✕</button></td></tr>`; }).join("")}
+            <td class="c"><button class="btn sm" data-act="del-pl" data-i="${i}" aria-label="Quitar producto" title="Quitar este producto">🗑</button></td></tr>`; }).join("")}
         </tbody></table></div>
-        <div class="row"><button class="btn" data-act="add-pl">+ Agregar producto</button></div>
+        <div class="row"><button class="btn" data-act="add-pl">+ Agregar producto</button><button class="btn" data-act="abrir-selector">📦 Elegir del inventario</button></div>
         <div class="cuadre ${!toNum(d.total) || Math.abs(suma - toNum(d.total)) < 0.01 ? "ok" : "bad"}" id="cuadre-pedido">${cuadrePedidoTxt()}</div>
-        <button class="btn primary big" data-act="guardar-pedido">Guardar pedido</button>
+        <div class="row" style="gap:10px"><button class="btn danger" data-act="descartar-pedido">🗑 Descartar pedido</button><button class="btn primary big" data-act="guardar-pedido" style="flex:1">Guardar pedido</button></div>
       </section>
     </div>
   </div>`;
@@ -808,6 +822,40 @@ function cuadrePedidoTxt(){
   return Math.abs(suma - total) < 0.01 ? `✓ Cuadra con la boleta: ${soles(suma)}${extra}` : `Los productos suman ${soles(suma)} y la boleta dice ${soles(total)}. Revisa cantidades y precios.`;
 }
 const lineaPedido = () => ({nombre:"", cantidad:1, unidad:"CAJA", factor:1, precio:"", bonif:false});
+// Autocompletar productos y elegir del inventario
+function ultimoPrecio(p, unidad){
+  const its = S.ritems.filter(i => i.producto_id === p.id && !i.bonificacion && i.unidad_compra === unidad)
+    .map(i => ({i, f: S.recepciones.find(r => r.id === i.recepcion_id)?.fecha || ""})).sort((a,b) => b.f.localeCompare(a.f));
+  return its[0] ? toNum(its[0].i.precio_unit) : null;
+}
+function elegirProductoLinea(l, p){
+  const e = empaque(p);
+  l.nombre = p.nombre; l.unidad = e ? e.unidad : (Object.keys(p.presentaciones || {})[0] || "UN"); l.factor = e ? e.factor : 1; l.unidadVenta = uv(p);
+  const ult = ultimoPrecio(p, l.unidad); if(ult && !toNum(l.precio)) l.precio = ult;
+}
+function mostrarSugerencias(inp){
+  const q = norm(inp.value), i = +inp.dataset.pl; let box = $("#sug");
+  const ps = q ? S.productos.filter(p => coincide(p, q)).slice(0, 8) : [];
+  if(!ps.length){ box?.remove(); return; }
+  if(!box){ box = document.createElement("div"); box.id = "sug"; document.body.appendChild(box); }
+  const r = inp.getBoundingClientRect();
+  Object.assign(box.style, {left: (r.left + scrollX) + "px", top: (r.bottom + scrollY + 4) + "px", width: Math.min(innerWidth - 16, Math.max(r.width, 320)) + "px"});
+  box.innerHTML = ps.map(p => `<button data-act="sug" data-i="${i}" data-id="${p.id}"><span><span class="cod">${esc(p.codigo || "")}</span><b>${esc(p.nombre)}</b></span><small>${esc([p.marca, p.linea].filter(Boolean).join(" · "))} · stock ${esc(stockTxt(p, S.stock.get(p.id) ?? 0))}</small></button>`).join("");
+}
+function abrirSelector(){
+  S.sel ??= {q:"", linea:"", marca:"", ids:new Set()};
+  const s = S.sel, q = norm(s.q);
+  const ps = S.productos.filter(p => (!s.linea || (p.linea || "Sin línea") === s.linea) && (!s.marca || (p.marca || "Sin marca") === s.marca) && (!q || coincide(p, q))).sort((a,b) => a.nombre.localeCompare(b.nombre));
+  const opts = (vals, sel, todos) => `<option value="">${todos}</option>` + [...new Set(vals)].sort().map(v => `<option ${v===sel?"selected":""}>${esc(v)}</option>`).join("");
+  $("#overlayRoot").innerHTML = `<div class="overlay centro" data-act="cerrar-fondo"><div class="recibo" role="dialog" aria-label="Elegir del inventario">
+    <div class="recibo-h"><span class="small">Agregar al pedido</span><h2>📦 Elegir de tu inventario</h2></div>
+    <div class="filters"><input id="sel-q" type="search" placeholder="Buscar por nombre o código" value="${esc(s.q)}">
+      <select id="sel-linea">${opts(S.productos.map(p => p.linea || "Sin línea"), s.linea, "Todas las líneas")}</select>
+      <select id="sel-marca">${opts(S.productos.map(p => p.marca || "Sin marca"), s.marca, "Todas las marcas")}</select></div>
+    <div class="sel-lista">${ps.map(p => `<label class="sel-item"><input type="checkbox" data-sel="${p.id}" ${s.ids.has(p.id) ? "checked" : ""}><span style="min-width:0"><span class="cod">${esc(p.codigo || "")}</span><b>${esc(p.nombre)}</b><br><small class="muted">${esc([p.marca, p.linea].filter(Boolean).join(" · "))} · stock ${esc(stockTxt(p, S.stock.get(p.id) ?? 0))}</small></span></label>`).join("") || `<p class="muted">Ningún producto coincide.</p>`}</div>
+    <div class="row between"><button class="btn" data-act="cerrar">Cancelar</button><button class="btn primary" data-act="sel-agregar">Agregar al pedido (${s.ids.size})</button></div>
+  </div></div>`;
+}
 const nuevoPedidoVacio = () => ({proveedor:"", documento:"", total:"", condicion:"contado", dias:15, entrega: sumarDias(hoy(),1), lineas:[lineaPedido()], url:null, img:null, leyendo:false, leida:false, error:"", dudas:[]});
 async function leerBoletaPedido(){
   const d = S.pedido; if(!d?.img) return;
@@ -1063,7 +1111,6 @@ function recorte(im, y0, y1, lado = 1600){
 // Vista previa: lo que se va a registrar, para revisar y aceptar
 function abrirConfirmacion(){
   const d = S.rec, filas = d.filas.filter(f => f.nombre.trim());
-  if(!d.proveedor.trim()){ toast("Escribe el proveedor."); return; }
   if(!filas.length){ toast("Agrega al menos un producto."); return; }
   const grupos = new Map(); filas.forEach(f => { const k = norm(f.nombre); if(!grupos.has(k)) grupos.set(k, []); grupos.get(k).push(f); });
   const suma = filas.reduce((a,f) => a + (f.bonificacion ? 0 : toNum(f.importe)), 0), total = d.pedidoId ? suma : (toNum(d.total) || suma);
@@ -1115,14 +1162,13 @@ function aplicarLectura(r){
 
 async function guardarRecepcion(btn){
   const d = S.rec, filas = d.filas.filter(f => f.nombre.trim());
-  if(!d.proveedor.trim()){ toast("Escribe el proveedor."); return; }
   if(!filas.length){ toast("Agrega al menos un producto."); return; }
   if(filas.some(f => toNum(f.cantidad) < 0 || !(toNum(f.factor) > 0))){ toast("Revisa las cantidades y el campo Trae."); return; }
   btn.disabled = true; btn.innerHTML = `<span class="spin"></span> Guardando…`;
   try{
-    let pr = S.proveedores.find(p => norm(p.nombre) === norm(d.proveedor));
-    if(!pr) [pr] = await insertar("proveedores", {nombre:d.proveedor.trim(), ruc:d.ruc || null, dias_credito: d.condicion === "credito" ? toNum(d.dias) : 0});
-    else if(d.condicion === "credito" && toNum(d.dias) && toNum(d.dias) !== pr.dias_credito) await actualizar("proveedores", pr.id, {dias_credito: toNum(d.dias)});
+    let pr = d.proveedor.trim() ? S.proveedores.find(p => norm(p.nombre) === norm(d.proveedor)) : null;
+    if(!pr && d.proveedor.trim()) [pr] = await insertar("proveedores", {nombre:d.proveedor.trim(), ruc:d.ruc || null, dias_credito: d.condicion === "credito" ? toNum(d.dias) : 0});
+    else if(pr && d.condicion === "credito" && toNum(d.dias) && toNum(d.dias) !== pr.dias_credito) await actualizar("proveedores", pr.id, {dias_credito: toNum(d.dias)});
     // Las filas con el mismo nombre son un solo producto
     const grupos = new Map();
     filas.forEach(f => { const k = norm(f.nombre); if(!grupos.has(k)) grupos.set(k, []); grupos.get(k).push(f); });
@@ -1138,7 +1184,7 @@ async function guardarRecepcion(btn){
         importe: f.bonificacion ? 0 : toNum(f.importe), bonificacion: !!f.bonificacion, observacion: f.observacion || null}); });
     }
     const total = d.pedidoId ? items.reduce((a,i) => a+i.importe, 0) : (toNum(d.total) || items.reduce((a,i) => a+i.importe, 0));
-    const [rec] = await insertar("recepciones", {pedido_id:d.pedidoId, proveedor_id:pr.id, fecha:d.fecha || hoy(), documento:d.documento.trim() || null, total, condicion:d.condicion, dias_credito: d.condicion === "credito" ? toNum(d.dias) : null, vence: d.condicion === "credito" ? sumarDias(d.fecha || hoy(), toNum(d.dias)) : null, origen: d.leida ? "foto" : "manual"});
+    const [rec] = await insertar("recepciones", {pedido_id:d.pedidoId, proveedor_id:pr?.id || null, fecha:d.fecha || hoy(), documento:d.documento.trim() || null, total, condicion:d.condicion, dias_credito: d.condicion === "credito" ? toNum(d.dias) : null, vence: d.condicion === "credito" ? sumarDias(d.fecha || hoy(), toNum(d.dias)) : null, origen: d.leida ? "foto" : "manual"});
     if(items.length) await insertar("recepcion_items", items.map(i => ({...i, recepcion_id:rec.id})));
     if(d.pedidoId){ await cargar(); const pe = S.pedidos.find(p => p.id === d.pedidoId); if(pe){ const a = avancePedido(pe); await actualizar("pedidos", pe.id, {estado: a.lineas.every(l => l.pendiente <= 0) ? "recibido" : "cerrado"}); } }
     S.rec = null; await refrescar(true); ir("inicio");
@@ -1341,6 +1387,7 @@ function vistaMas(){
 
 // ---------- Eventos ----------
 document.addEventListener("click", async e => {
+  if(!e.target.closest("#sug") && !e.target.matches?.("[data-k=nombre]")) $("#sug")?.remove();
   const t = e.target.closest("[data-go],[data-act]"); if(!t) return;
   if(t.dataset.go){ if(t.dataset.go === "recibir" && S.view !== "recibir") S.rec = S.rec || null; ir(t.dataset.go); return; }
   const a = t.dataset.act, id = t.dataset.id;
@@ -1366,7 +1413,7 @@ document.addEventListener("click", async e => {
     }
     else if(a === "anular-venta"){ if(t.dataset.ok !== "1"){ t.dataset.ok = "1"; t.textContent = "¿Seguro?"; return; } await borrar("ventas", id); await refrescar(true); toast("Venta anulada."); }
     // Pedidos
-    else if(a === "nuevo-pedido"){ S.pedido = nuevoPedidoVacio(); ir("pedidos"); }
+    else if(a === "nuevo-pedido"){ S.pedido = nuevoPedidoVacio(); S.pedido.modo = "manual"; ir("pedidos"); }
     else if(a === "add-pl"){ S.pedido.lineas.push(lineaPedido()); render(); }
     else if(a === "del-pl"){ S.pedido.lineas.splice(+t.dataset.i, 1); if(!S.pedido.lineas.length) S.pedido.lineas.push(lineaPedido()); render(); }
     else if(a === "cancelar-pedido-form"){ S.pedido = null; render(); }
@@ -1377,6 +1424,11 @@ document.addEventListener("click", async e => {
     else if(a === "recibir-directo") nuevaRecepcion(null);
     else if(a === "subir-boleta"){ if(!S.pedido) S.pedido = nuevoPedidoVacio(); ir("pedidos"); setTimeout(() => $("#foto-pedido")?.click(), 80); }
     else if(a === "leer-pedido") leerBoletaPedido();
+    else if(a === "sug"){ const l = S.pedido.lineas[+t.dataset.i], p = prod(id); if(l && p){ elegirProductoLinea(l, p); $("#sug")?.remove(); render(); } }
+    else if(a === "abrir-selector"){ S.sel = {q:"", linea:"", marca:"", ids:new Set()}; abrirSelector(); }
+    else if(a === "sel-agregar"){ const nuevas = [...S.sel.ids].map(pid => { const l = lineaPedido(); l.cantidad = 1; elegirProductoLinea(l, prod(pid)); return l; }); S.pedido.lineas = [...S.pedido.lineas.filter(l => l.nombre.trim()), ...nuevas]; if(!S.pedido.lineas.length) S.pedido.lineas.push(lineaPedido()); cerrarFicha(); render(); toast(`Agregados ${nuevas.length} productos. Pon las cantidades.`); }
+    else if(a === "descartar-pedido"){ if(!await confirmar(t, "¿Descartar todo? Tocar otra vez")) return; S.pedido = null; render(); toast("Pedido descartado. No se guardó nada."); }
+    else if(a === "modo-pedido"){ S.pedido.modo = t.dataset.v; render(); if(t.dataset.v === "foto" && !S.pedido.url) setTimeout(() => $("#foto-pedido")?.click(), 80); }
     else if(a === "filtro-hist"){ S.fh = t.dataset.v; render(); }
     else if(a === "excel-stock"){ await descargarExcel("kardex-stock", {"Stock": filasStock()}); toast("Excel descargado."); }
     else if(a === "excel-compras"){ await descargarExcel("kardex-compras", {"Compras": filasCompras()}); toast("Excel descargado."); }
@@ -1470,12 +1522,15 @@ document.addEventListener("input", e => {
   }
   const cuadreP = () => { const c = $("#cuadre-pedido"); if(c) c.textContent = cuadrePedidoTxt(); };
   if(t.dataset.pf){ S.pedido[t.dataset.pf] = t.value; cuadreP(); return; }
-  if(t.dataset.pl !== undefined){ if(t.type === "checkbox") return; S.pedido.lineas[+t.dataset.pl][t.dataset.k] = t.value; cuadreP(); if(t.dataset.k === "nombre"){ const p = porNombre(t.value); if(p){ const big = Object.entries(p.presentaciones||{}).sort((a,b) => b[1]-a[1])[0]; if(big){ S.pedido.lineas[+t.dataset.pl].unidad = big[0]; S.pedido.lineas[+t.dataset.pl].factor = big[1]; } } } return; }
+  if(t.id === "sel-q"){ S.sel.q = t.value; const pos = t.selectionStart; abrirSelector(); const n = $("#sel-q"); n.focus(); n.setSelectionRange(pos,pos); return; }
+  if(t.dataset.pl !== undefined){ if(t.type === "checkbox") return; S.pedido.lineas[+t.dataset.pl][t.dataset.k] = t.value; cuadreP(); if(t.dataset.k === "nombre") mostrarSugerencias(t); if(t.dataset.k === "nombre"){ const p = porNombre(t.value); if(p){ const big = Object.entries(p.presentaciones||{}).sort((a,b) => b[1]-a[1])[0]; if(big){ S.pedido.lineas[+t.dataset.pl].unidad = big[0]; S.pedido.lineas[+t.dataset.pl].factor = big[1]; } } } return; }
   const d = S.rec; if(!d) return;
   if(t.dataset.h){ d[t.dataset.h] = t.value; if(t.dataset.h === "total") $("#cuadre").innerHTML = cuadreHtml(); return; }
 });
 document.addEventListener("change", async e => {
   const t = e.target;
+  if(t.dataset.sel){ t.checked ? S.sel.ids.add(t.dataset.sel) : S.sel.ids.delete(t.dataset.sel); const b = $("[data-act=sel-agregar]"); if(b) b.textContent = `Agregar al pedido (${S.sel.ids.size})`; return; }
+  if(t.id === "sel-linea" || t.id === "sel-marca"){ S.sel[t.id.slice(4)] = t.value; abrirSelector(); return; }
   if(t.dataset.waSec){ t.checked ? S.wa.sec.add(t.dataset.waSec) : S.wa.sec.delete(t.dataset.waSec); $("#wa-texto").value = mensajeElegido(S.wa); return; }
   if(t.dataset.waF){ S.wa[t.dataset.waF] = t.value; $("#wa-texto").value = mensajeElegido(S.wa); return; }
   if(["f-linea","f-marca","f-prov"].includes(t.id)){ S.f[t.id.slice(2)] = t.value; render(); return; }
@@ -1517,15 +1572,14 @@ document.addEventListener("keydown", e => {
 
 async function guardarPedido(btn){
   const d = S.pedido, lineas = d.lineas.filter(l => l.nombre.trim() && toNum(l.cantidad) > 0);
-  if(!d.proveedor.trim()){ toast("Escribe el proveedor."); return; }
   if(!lineas.length){ toast("Agrega al menos un producto."); return; }
   // La misma boleta del mismo proveedor no se registra dos veces sin querer
   const doc = norm(d.documento || "");
   const repetido = doc && S.pedidos.find(pe => norm(pe.documento || "") === doc && norm(prov(pe.proveedor_id)?.nombre || "") === norm(d.proveedor));
   if(repetido && btn.dataset.ok !== "1"){ btn.dataset.ok = "1"; btn.textContent = "Ya existe: tocar otra vez para guardarla igual"; toast(`La boleta ${d.documento} de ${d.proveedor} ya está registrada (pedido del ${fecha(repetido.fecha)}).`); return; }
   btn.disabled = true;
-  let pr = S.proveedores.find(p => norm(p.nombre) === norm(d.proveedor));
-  if(!pr) [pr] = await insertar("proveedores", {nombre:d.proveedor.trim()});
+  let pr = d.proveedor.trim() ? S.proveedores.find(p => norm(p.nombre) === norm(d.proveedor)) : null;
+  if(!pr && d.proveedor.trim()) [pr] = await insertar("proveedores", {nombre:d.proveedor.trim()});
   const items = [];
   for(const l of lineas){
     let p = porNombre(l.nombre);
@@ -1542,7 +1596,7 @@ async function guardarPedido(btn){
     }
     items.push({producto_id:p.id, cantidad:toNum(l.cantidad), unidad_compra:uc, factor:toNum(l.factor) || 1, precio_unit: toNum(l.precio) || null, bonificacion: !!l.bonif, descripcion: l.descripcion || null});
   }
-  const [pe] = await insertar("pedidos", {proveedor_id:pr.id, entrega:d.entrega || null, documento: (d.documento || "").trim() || null, total: toNum(d.total) || items.reduce((a,i) => a + (i.bonificacion ? 0 : i.cantidad*toNum(i.precio_unit)), 0), condicion: d.condicion === "credito" ? "credito" : "contado", dias_credito: d.condicion === "credito" ? toNum(d.dias) || 15 : null});
+  const [pe] = await insertar("pedidos", {proveedor_id:pr?.id || null, entrega:d.entrega || null, documento: (d.documento || "").trim() || null, total: toNum(d.total) || items.reduce((a,i) => a + (i.bonificacion ? 0 : i.cantidad*toNum(i.precio_unit)), 0), condicion: d.condicion === "credito" ? "credito" : "contado", dias_credito: d.condicion === "credito" ? toNum(d.dias) || 15 : null});
   await insertar("pedido_items", items.map(i => ({...i, pedido_id:pe.id})));
   S.pedido = null; await refrescar(true); toast("Pedido guardado. Cuando llegue, tócalo para recibirlo.");
 }
