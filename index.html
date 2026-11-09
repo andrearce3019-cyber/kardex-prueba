@@ -331,6 +331,8 @@ tr.click:hover td{background:#F7FAFF}
   .filters{display:grid;grid-template-columns:1fr 1fr;gap:8px}
   .filters>input{grid-column:1/-1}
   .filters>select:last-child{grid-column:1/-1}
+  table.lm-gan td:nth-child(2),table.lm-gan td:nth-child(3),table.lm-gan td:nth-child(6){display:none}
+  table.lm-gan td:nth-child(4){font-size:1.1rem}
   header .live span{display:none}
   header .brand{font-size:1.2rem}
   header .brand::before{width:26px;height:26px}
@@ -392,7 +394,7 @@ const S = {
   view: (location.hash || "#inicio").slice(1), f: {q:"", linea:"", marca:"", prov:""},
   venta: {q:"", sel:null, cant:1, precio:""}, pedido: null, rec: null, abierto: null
 };
-const VIEWS = ["inicio","alertas","pedidos","recibir","compras","inventario","creditos","proveedores","pruebas","mas"];
+const VIEWS = ["inicio","alertas","venta","ganancia","pedidos","recibir","compras","inventario","creditos","proveedores","pruebas","mas"];
 if(!VIEWS.includes(S.view)) S.view = "inicio";
 
 // ---------- Utilidades ----------
@@ -457,7 +459,7 @@ async function cargar(){
   finally{ S.cargando = false; }
 }
 function marcarVivo(ok){ const l = $("#live"); l.classList.toggle("off", !ok); l.lastElementChild.textContent = ok ? "en vivo · "+hora(Date.now()) : "sin conexión"; }
-const editando = () => ["pedidos","recibir"].includes(S.view) && (S.pedido || S.rec || document.activeElement?.matches?.("input,select,textarea"));
+const editando = () => (S.view === "venta" && Object.keys(S.pvCambios || {}).length) || ["pedidos","recibir"].includes(S.view) && (S.pedido || S.rec || document.activeElement?.matches?.("input,select,textarea"));
 async function refrescar(forzar){ await cargar(); if(forzar || !editando()) render(); if(S.abierto && !document.activeElement?.closest?.(".sheet")) renderFicha(); }
 
 // ---------- Cálculos ----------
@@ -527,13 +529,15 @@ const ICON = {
   inventario:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>',
   proveedores:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 7h13v10H1zM14 10h4l3 3v4h-7"/><circle cx="5.5" cy="18" r="1.5"/><circle cx="17.5" cy="18" r="1.5"/></svg>',
   alertas:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg>',
+  venta:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg>',
+  ganancia:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M14 7h7v7"/></svg>',
   pruebas:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 11v5M14 11v5"/></svg>'
 };
 function pintarNav(){
   const nAl = S.conectado ? totalAlertas() : 0, nRec = S.pedidos.filter(p => p.estado === "pendiente").length;
-  const tabs = [["inicio","Resumen de inventario"],["alertas","Alertas" + (nAl ? ` (${nAl})` : "")],["pedidos","Pedidos"],["recibir","Recibir mercadería" + (nRec ? ` (${nRec})` : "")],["compras","Historial de compras"],["creditos","Créditos"],["inventario","Inventario valorizado"],["proveedores","Proveedores"],["pruebas","Borrar pruebas"]];
+  const tabs = [["inicio","Resumen de inventario"],["alertas","Alertas" + (nAl ? ` (${nAl})` : "")],["pedidos","Pedidos"],["recibir","Recibir mercadería" + (nRec ? ` (${nRec})` : "")],["compras","Historial de compras"],["venta","Para venta"],["ganancia","Ganancia"],["creditos","Créditos"],["inventario","Inventario valorizado"],["proveedores","Proveedores"],["pruebas","Borrar pruebas"]];
   $("#tabs").innerHTML = tabs.map(([v,t]) => `<button data-go="${v}" aria-current="${S.view===v}">${ICON[v]}<span>${t}</span></button>`).join("");
-  const enMas = ["inventario","compras","creditos","proveedores","pruebas","mas"].includes(S.view);
+  const enMas = ["inventario","compras","venta","ganancia","creditos","proveedores","pruebas","mas"].includes(S.view);
   $("#bottom").innerHTML = [["inicio","Resumen"],["alertas", nAl ? `Alertas (${nAl})` : "Alertas"],["pedidos","Pedidos"],["recibir", nRec ? `Recibir (${nRec})` : "Recibir"],["mas","Más"]]
     .map(([v,t]) => `<button data-go="${v}" aria-current="${v==="mas" ? enMas : S.view===v}">${ICON[v]}<span>${t}</span></button>`).join("");
 }
@@ -546,7 +550,7 @@ function render(){
   if(!S.clave){ $("#tabs").innerHTML = ""; $("#bottom").innerHTML = ""; m.innerHTML = vistaLogin(); return; }
   pintarNav();
   if(!S.conectado){ m.innerHTML = `<div class="card empty"><span class="spin"></span><p>Cargando tu tienda…</p></div>`; return; }
-  const V = {inicio:vistaInicio, vender:vistaVender, pedidos:vistaPedidos, recibir:vistaRecibir, inventario:vistaInventario, alertas:vistaAlertas, compras:vistaCompras, pruebas:vistaPruebas, creditos:vistaCreditos, proveedores:vistaProveedores, mas:vistaMas};
+  const V = {inicio:vistaInicio, vender:vistaVender, pedidos:vistaPedidos, recibir:vistaRecibir, inventario:vistaInventario, alertas:vistaAlertas, venta:vistaVenta, ganancia:vistaGanancia, compras:vistaCompras, pruebas:vistaPruebas, creditos:vistaCreditos, proveedores:vistaProveedores, mas:vistaMas};
   m.innerHTML = V[S.view]();
 }
 
@@ -1289,6 +1293,73 @@ async function limpiarHuerfanos(){
 }
 async function confirmar(t, texto){ if(t.dataset.ok === "1") return true; t.dataset.ok = "1"; t.dataset.txt = t.textContent; t.textContent = texto; setTimeout(() => { if(t.isConnected){ t.dataset.ok = ""; t.textContent = t.dataset.txt; } }, 5000); return false; }
 
+// ----- Para venta: precios, presentación, bonificación y rebaja -----
+const precioFinal = p => toNum(p.precio_venta) * (1 - toNum(p.rebaja_pct) / 100);
+const margenSobreCosto = (precio, costo) => costo > 0 ? (precio - costo) / costo : null;
+const pctTxt = x => x === null ? "—" : num(x * 100, 1) + "%";
+function filtrarVenta(){
+  const f = S.fv ??= {q:"", linea:"", marca:""}, q = norm(f.q);
+  return S.productos.filter(p => (!f.linea || (p.linea || "Sin línea") === f.linea) && (!f.marca || (p.marca || "Sin marca") === f.marca) && (!q || coincide(p, q))).sort((a,b) => a.nombre.localeCompare(b.nombre));
+}
+function filtrosVenta(){
+  const f = S.fv, opts = (vals, sel, todos) => `<option value="">${todos}</option>` + [...new Set(vals)].sort().map(v => `<option ${v===sel?"selected":""}>${esc(v)}</option>`).join("");
+  return `<div class="filters"><input id="fv-q" type="search" placeholder="Buscar por nombre o código" value="${esc(f.q)}">
+    <select id="fv-linea">${opts(S.productos.map(p => p.linea || "Sin línea"), f.linea, "Todas las líneas")}</select>
+    <select id="fv-marca">${opts(S.productos.map(p => p.marca || "Sin marca"), f.marca, "Todas las marcas")}</select></div>`;
+}
+function vistaVenta(){
+  const ps = filtrarVenta();
+  const fila = p => { const c = calc(p), e = empaque(p), costo = c.costo, pv = toNum(p.precio_venta), fin = precioFinal(p), m = margenSobreCosto(fin, costo);
+    return `<tr id="pv-${p.id}">
+      <td class="prod" data-l="Producto"><span class="cod">${esc(p.codigo || "")}</span><b>${esc(p.nombre)}</b><div class="hint muted">${esc([p.marca, p.linea].filter(Boolean).join(" · "))}${e ? ` · ${esc(abr(e.unidad))} x${num(e.factor,0)}` : ""}</div></td>
+      <td data-l="Se vende por"><select data-pv-k="unidad_venta" data-id="${p.id}">${UNIDADES.map(u => `<option ${u===uv(p)?"selected":""}>${u}</option>`).join("")}</select></td>
+      <td class="r" data-l="Costo c/u">${costo !== null ? soles(costo) : "—"}</td>
+      <td class="n" data-l="Precio venta S/"><input data-pv-k="precio_venta" data-id="${p.id}" inputmode="decimal" value="${pv || ""}" placeholder="0.00"></td>
+      <td class="n" data-l="${e ? "Precio por " + esc(abr(e.unidad)) : "Precio por caja"}">${e ? `<input data-pv-k="precio_caja" data-id="${p.id}" inputmode="decimal" value="${toNum(p.precio_caja) || ""}" placeholder="${pv ? num(pv * e.factor, 2) : "0.00"}">` : `<span class="muted small">no aplica</span>`}</td>
+      <td data-l="Bonificación"><input data-pv-k="bonif_venta" data-id="${p.id}" value="${esc(p.bonif_venta || "")}" placeholder="ej. 12+1"></td>
+      <td class="n" data-l="Rebaja %"><input data-pv-k="rebaja_pct" data-id="${p.id}" inputmode="decimal" value="${toNum(p.rebaja_pct) || ""}" placeholder="0"></td>
+      <td class="r" data-l="Margen" id="pvm-${p.id}">${margenHtml(fin, costo)}</td></tr>`; };
+  return `<div class="row between"><div><h1>Para venta</h1><p class="sub">Pon el precio de venta de cada producto, cómo lo vendes, si lleva bonificación o rebaja. El margen se calcula solo.</p></div>
+    <div class="row"><button class="btn" data-act="excel-venta">⬇ Descargar Excel</button><button class="btn primary" data-act="guardar-precios">Guardar precios</button></div></div>
+  <section class="card">${filtrosVenta()}
+    <div class="tbl"><table class="boleta tabla-venta"><thead><tr><th>Producto</th><th>Se vende por</th><th class="r">Costo c/u</th><th class="r">Precio venta S/</th><th class="r">Precio x caja</th><th>Bonificación</th><th class="r">Rebaja %</th><th class="r">Margen</th></tr></thead>
+      <tbody>${ps.map(fila).join("") || `<tr><td colspan="8" class="muted">Ningún producto coincide.</td></tr>`}</tbody></table></div>
+    <div class="row between"><span class="small muted">Margen = cuánto ganas sobre lo que te costó. Ej.: cuesta S/ 5.00 y lo vendes a S/ 7.50 → ganas S/ 2.50 = 50%.</span><button class="btn primary" data-act="guardar-precios">Guardar precios</button></div>
+  </section>`;
+}
+function margenHtml(precio, costo){
+  if(!(precio > 0)) return `<span class="muted small">pon precio</span>`;
+  if(costo === null) return `<span class="muted small">sin costo</span>`;
+  const m = margenSobreCosto(precio, costo), cls = m < 0 ? "bad" : m < 0.15 ? "warn" : "ok";
+  return `<span class="pill ${cls}">${pctTxt(m)}</span><div class="small muted">gana ${soles(precio - costo)}</div>`;
+}
+
+// ----- Ganancia por producto -----
+function vistaGanancia(){
+  const ps = filtrarVenta(), filas = ps.map(p => { const c = calc(p), fin = precioFinal(p), stock = Math.max(0, c.stock);
+    return {p, c, fin, costo:c.costo, gan: fin > 0 && c.costo !== null ? fin - c.costo : null, stock}; });
+  const conPrecio = filas.filter(x => x.gan !== null), sinPrecio = filas.filter(x => x.gan === null);
+  const costoStock = conPrecio.reduce((a,x) => a + x.costo * x.stock, 0), ventaStock = conPrecio.reduce((a,x) => a + x.fin * x.stock, 0), ganStock = ventaStock - costoStock;
+  return `<div class="row between"><div><h1>Ganancia</h1><p class="sub">Lo que ganas por producto con los precios que pusiste en Para venta, y lo que ganarías si vendes todo tu stock.</p></div>
+    <div class="row"><button class="btn" data-act="excel-ganancia">⬇ Descargar Excel</button><button class="btn" data-go="venta">Editar precios</button></div></div>
+  <div class="kpis">
+    <div class="kpi k2"><span class="kico">${ICON.inventario}</span><span class="lab">Stock a costo</span><span class="val">${soles(costoStock)}</span><span class="note">${conPrecio.length} productos con precio</span></div>
+    <div class="kpi k1"><span class="kico">${ICON.compras}</span><span class="lab">Stock a precio de venta</span><span class="val">${soles(ventaStock)}</span><span class="note">si vendes todo</span></div>
+    <div class="kpi k3"><span class="kico">${ICON.creditos}</span><span class="lab">Ganancia posible</span><span class="val" style="color:var(--ok)">${soles(ganStock)}</span><span class="note">vendiendo todo el stock</span></div>
+    <div class="kpi k4"><span class="kico">${ICON.pedidos}</span><span class="lab">Margen promedio</span><span class="val">${pctTxt(costoStock > 0 ? ganStock / costoStock : null)}</span><span class="note">sobre el costo</span></div>
+  </div>
+  <section class="card">${filtrosVenta()}
+    <div class="tbl"><table class="lm lm-gan"><thead><tr><th>Producto</th><th class="r">Costo c/u</th><th class="r">Precio venta</th><th class="r">Ganas c/u</th><th class="r">Margen</th><th class="r">Stock</th><th class="r">Ganancia del stock</th></tr></thead><tbody>
+      ${conPrecio.sort((a,b) => (b.gan*b.stock) - (a.gan*a.stock)).map(x => `<tr class="click" data-act="abrir" data-id="${x.p.id}"><td><span class="cod">${esc(x.p.codigo || "")}</span><b>${esc(x.p.nombre)}</b><br><span class="small muted">${esc([x.p.marca, x.p.linea].filter(Boolean).join(" · "))}${toNum(x.p.rebaja_pct) ? ` · rebaja ${num(x.p.rebaja_pct,1)}%` : ""}${x.p.bonif_venta ? ` · bonif. ${esc(x.p.bonif_venta)}` : ""}</span></td>
+        <td class="r">${soles(x.costo)}</td><td class="r">${soles(x.fin)}</td><td class="r" style="color:${x.gan < 0 ? "var(--bad)" : "var(--ok)"};font-weight:700">${soles(x.gan)}</td>
+        <td class="r"><span class="pill ${x.gan < 0 ? "bad" : x.gan / x.costo < 0.15 ? "warn" : "ok"}">${pctTxt(margenSobreCosto(x.fin, x.costo))}</span></td>
+        <td class="r">${esc(stockTxt(x.p, x.stock))}</td><td class="r"><b>${soles(x.gan * x.stock)}</b></td></tr>`).join("") || `<tr><td colspan="7" class="muted">Aún no pusiste precios de venta. Ve a <b>Para venta</b>.</td></tr>`}
+    </tbody></table></div>
+    ${sinPrecio.length ? `<p class="small muted" style="margin:0">${sinPrecio.length} producto${sinPrecio.length===1?"":"s"} sin precio de venta: ${sinPrecio.slice(0,6).map(x => esc(x.p.nombre)).join(", ")}${sinPrecio.length > 6 ? "…" : ""}. <button class="linkbtn" data-go="venta">Ponles precio</button></p>` : ""}
+  </section>`;
+}
+const filasVenta = () => filtrarVenta().map(p => { const c = calc(p), fin = precioFinal(p), m = margenSobreCosto(fin, c.costo); return {"Código":p.codigo || "", "Producto":p.nombre, "Marca":p.marca || "", "Línea":p.linea || "", "Se vende por":uv(p), "Costo c/u":c.costo !== null ? Math.round(c.costo*100)/100 : "", "Precio venta":toNum(p.precio_venta) || "", "Precio x caja":toNum(p.precio_caja) || "", "Bonificación":p.bonif_venta || "", "Rebaja %":toNum(p.rebaja_pct) || "", "Precio final":fin ? Math.round(fin*100)/100 : "", "Ganas c/u":fin && c.costo !== null ? Math.round((fin - c.costo)*100)/100 : "", "Margen %":m !== null && fin ? Math.round(m*1000)/10 : "", "Stock (unid.)":Math.round(c.stock*100)/100, "Ganancia del stock":fin && c.costo !== null ? Math.round((fin - c.costo)*Math.max(0,c.stock)*100)/100 : ""}; });
+
 // ----- Alertas -----
 function alertasDatos(){
   const C = new Map(S.productos.map(p => [p.id, calc(p)]));
@@ -1370,6 +1441,8 @@ function vistaMas(){
   <section class="card">
     <button class="btn big" data-go="inventario">Inventario general</button>
     <button class="btn big" data-go="compras">Historial de compras</button>
+    <button class="btn big" data-go="venta">🏷 Para venta (precios)</button>
+    <button class="btn big" data-go="ganancia">📈 Ganancia por producto</button>
     <button class="btn big" data-act="excel-todo">⬇ Descargar todo en Excel</button>
     <button class="btn big danger" data-go="pruebas">🗑 Borrar pruebas</button>
     <button class="btn big" data-go="creditos">Créditos con proveedores</button>
@@ -1424,6 +1497,8 @@ document.addEventListener("click", async e => {
     else if(a === "recibir-directo") nuevaRecepcion(null);
     else if(a === "subir-boleta"){ if(!S.pedido) S.pedido = nuevoPedidoVacio(); ir("pedidos"); setTimeout(() => $("#foto-pedido")?.click(), 80); }
     else if(a === "leer-pedido") leerBoletaPedido();
+    else if(a === "excel-venta" || a === "excel-ganancia"){ await descargarExcel(a === "excel-venta" ? "kardex-precios" : "kardex-ganancia", {"Precios y ganancia": filasVenta()}); toast("Excel descargado."); }
+    else if(a === "guardar-precios"){ const cam = Object.entries(S.pvCambios || {}); if(!cam.length){ toast("No hay cambios por guardar."); return; } t.disabled = true; for(const [pid, ch] of cam) await actualizar("productos", pid, ch); S.pvCambios = {}; await refrescar(true); toast(`Precios guardados: ${cam.length} producto${cam.length===1?"":"s"}.`); }
     else if(a === "sug"){ const l = S.pedido.lineas[+t.dataset.i], p = prod(id); if(l && p){ elegirProductoLinea(l, p); $("#sug")?.remove(); render(); } }
     else if(a === "abrir-selector"){ S.sel = {q:"", linea:"", marca:"", ids:new Set()}; abrirSelector(); }
     else if(a === "sel-agregar"){ const nuevas = [...S.sel.ids].map(pid => { const l = lineaPedido(); l.cantidad = 1; elegirProductoLinea(l, prod(pid)); return l; }); S.pedido.lineas = [...S.pedido.lineas.filter(l => l.nombre.trim()), ...nuevas]; if(!S.pedido.lineas.length) S.pedido.lineas.push(lineaPedido()); cerrarFicha(); render(); toast(`Agregados ${nuevas.length} productos. Pon las cantidades.`); }
@@ -1520,6 +1595,8 @@ document.addEventListener("input", e => {
     if((k === "cantidad" || k === "precioUnit") && !f.importeManual && !f.bonificacion){ f.importe = Math.round(toNum(f.cantidad)*toNum(f.precioUnit)*100)/100 || ""; if(imp) imp.value = f.importe; }
     actualizarFila(i); return;
   }
+  if(t.dataset.pvK){ const v = t.dataset.pvK === "bonif_venta" ? t.value.trim() || null : (t.value.trim() === "" ? null : toNum(t.value)); ((S.pvCambios ??= {})[t.dataset.id] ??= {})[t.dataset.pvK] = v; const p = prod(t.dataset.id); if(p){ const q = {...p, ...S.pvCambios[t.dataset.id]}; const el = $(`#pvm-${p.id}`); if(el) el.innerHTML = margenHtml(precioFinal(q), calc(p).costo); } return; }
+  if(t.id === "fv-q"){ S.fv.q = t.value; const pos = t.selectionStart; render(); const n = $("#fv-q"); n.focus(); n.setSelectionRange(pos,pos); return; }
   const cuadreP = () => { const c = $("#cuadre-pedido"); if(c) c.textContent = cuadrePedidoTxt(); };
   if(t.dataset.pf){ S.pedido[t.dataset.pf] = t.value; cuadreP(); return; }
   if(t.id === "sel-q"){ S.sel.q = t.value; const pos = t.selectionStart; abrirSelector(); const n = $("#sel-q"); n.focus(); n.setSelectionRange(pos,pos); return; }
@@ -1529,6 +1606,8 @@ document.addEventListener("input", e => {
 });
 document.addEventListener("change", async e => {
   const t = e.target;
+  if(t.dataset.pvK && t.tagName === "SELECT"){ ((S.pvCambios ??= {})[t.dataset.id] ??= {})[t.dataset.pvK] = t.value; return; }
+  if(t.id === "fv-linea" || t.id === "fv-marca"){ S.fv[t.id.slice(3)] = t.value; render(); return; }
   if(t.dataset.sel){ t.checked ? S.sel.ids.add(t.dataset.sel) : S.sel.ids.delete(t.dataset.sel); const b = $("[data-act=sel-agregar]"); if(b) b.textContent = `Agregar al pedido (${S.sel.ids.size})`; return; }
   if(t.id === "sel-linea" || t.id === "sel-marca"){ S.sel[t.id.slice(4)] = t.value; abrirSelector(); return; }
   if(t.dataset.waSec){ t.checked ? S.wa.sec.add(t.dataset.waSec) : S.wa.sec.delete(t.dataset.waSec); $("#wa-texto").value = mensajeElegido(S.wa); return; }
