@@ -1,6 +1,6 @@
 // Permite instalar el Kardex como app. Siempre intenta traer la versión nueva;
 // si no hay internet, abre la última guardada. Los datos (Supabase) nunca se guardan aquí.
-const CACHE = "kardex-v1";
+const CACHE = "kardex-v2";
 const BASE = ["./", "./index.html", "./manifest.webmanifest", "./icono-192.png", "./icono-512.png"];
 
 self.addEventListener("install", (e) => {

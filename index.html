@@ -387,6 +387,69 @@ body.en-login main{padding:0!important;max-width:none}
 .tarjeta-nav .btn.primary{background:linear-gradient(135deg,#12A37F,#0e8a6b);border:0;color:#fff}
 .btn.instalar{background:#fff7e0;border-color:#ffd166;color:#7a5200}
 @media (prefers-reduced-motion:reduce){.nieve i,.foco{animation:none}.nieve{display:none}}
+/* ===== Nuevo pedido: primero elegir foto o a mano ===== */
+.elegir-modo{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.elegir-modo button{all:unset;box-sizing:border-box;cursor:pointer;display:grid;gap:8px;align-content:start;padding:22px;border-radius:20px;border:2px solid var(--line);background:var(--surface);box-shadow:var(--shadow);transition:border-color .15s,transform .15s}
+.elegir-modo button:hover{border-color:var(--accent);transform:translateY(-2px)}
+.elegir-modo button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.elegir-modo .em-ico{width:54px;height:54px;border-radius:16px;display:grid;place-items:center;font-size:28px;background:var(--accent-weak)}
+.elegir-modo button:nth-child(2) .em-ico{background:#FFF1E2}
+.elegir-modo b{font-size:1.15rem}
+.elegir-modo span{color:var(--muted);font-size:.92rem}
+.elegir-modo .em-ir{color:var(--accent);font-weight:700;margin-top:4px}
+@media (max-width:720px){.elegir-modo{grid-template-columns:minmax(0,1fr)}.elegir-modo button{padding:18px;grid-template-columns:54px minmax(0,1fr);column-gap:14px}.elegir-modo .em-ico{grid-row:1/span 3}.elegir-modo .em-ir{display:none}}
+/* Cumplimiento de proveedores como lista */
+.cumpl{display:grid}
+.cumpl-f{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:12px 0;border-top:1px solid var(--soft)}
+.cumpl-f:first-child{border-top:0}
+.cumpl-f>div{flex:1}
+.cumpl-f .pill{font-size:.95rem;padding:5px 12px}
+.hist-cab{display:grid;gap:10px}
+.seg{max-width:100%;overflow-x:auto;scrollbar-width:none}
+.seg button{white-space:nowrap}
+/* Celular: cada producto como tarjeta separada, con color según su estado */
+@media (max-width:720px){
+  .solo-pc{display:none!important}
+  table.lm{display:block}
+  table.lm tbody{display:grid;gap:10px}
+  table.lm tbody tr,table.lm tbody tr:last-child{border:1px solid var(--line);border-left:4px solid var(--line);border-radius:14px;padding:12px 14px;background:var(--surface);box-shadow:0 1px 2px rgba(27,34,54,.04)}
+  table.lm tbody tr[data-e="agotado"],table.lm tbody tr[data-e="quiebre"]{border-left-color:var(--bad)}
+  table.lm tbody tr[data-e="bajo"]{border-left-color:var(--warn)}
+  table.lm tbody tr[data-e="ok"]{border-left-color:var(--ok)}
+  table.lm tbody tr[data-e="porllegar"]{border-left-color:#7FB7FF}
+  table.lm td:first-child .cod{display:table;margin-bottom:4px}
+  tr.click:hover td{background:transparent}
+  .card:has(table.lm){background:transparent;border:0;box-shadow:none;padding:4px 0}
+  main{gap:16px}
+  .pedido-rec,.alerta{border-radius:14px}
+  .hist-cab .seg{display:flex;flex-wrap:wrap;gap:6px;border:0;overflow:visible}
+  .hist-cab .seg button{border:1px solid var(--line);border-radius:999px;padding:7px 12px;font-size:.85rem;background:var(--surface)}
+  .hist-cab .seg button[aria-pressed="true"]{border-color:var(--accent);background:var(--accent);color:#fff}
+  .kpi .lab{white-space:normal;line-height:1.25}
+  .modo-pedido{gap:8px}
+  .modo-pedido button{padding:10px 12px;text-align:center}
+  .modo-pedido button span{display:none}
+}
+/* ===== Navidad dentro de la app ===== */
+.luces,.nieve-fondo{display:none}
+body.navidad .luces{display:flex;justify-content:space-around;position:absolute;left:0;right:0;bottom:-13px;height:14px;padding:0 3%;pointer-events:none;z-index:1}
+body.navidad .luces::before{content:"";position:absolute;left:0;right:0;top:-8px;height:12px;border-bottom:1.5px solid rgba(27,34,54,.18);border-radius:0 0 50% 50%}
+body.navidad .luces .foco,.banner-nav .foco{width:8px;height:11px;margin-top:0;box-shadow:0 0 8px currentColor}
+body.navidad header{position:sticky}
+@media (min-width:1000px){body.navidad header{position:fixed}body.navidad .luces{top:0;bottom:auto;padding-top:4px}body.navidad .luces::before{top:-6px}}
+body.navidad header .brand::before{content:"🎄";display:grid;place-items:center;font-size:17px;background:linear-gradient(135deg,#0E7C5F,#12A37F)}
+body.navidad{background:radial-gradient(700px 380px at 0% 0%,#FDECEE 0%,transparent 70%),radial-gradient(700px 420px at 100% 100%,#E3F6F0 0%,transparent 70%),var(--bg);background-attachment:fixed}
+body.navidad .nieve-fondo{display:block;position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden}
+.nieve-fondo i{position:absolute;top:-24px;font-style:normal;color:#9CC4E4;opacity:.55;animation:caer linear infinite}
+body.en-login .nieve-fondo{display:none}
+main{position:relative;z-index:1}
+.banner-nav{position:relative;overflow:hidden;display:flex;align-items:center;gap:14px;padding:22px 18px 16px;border-radius:20px;color:#fff;box-shadow:0 10px 30px rgba(11,59,51,.25);
+  background:radial-gradient(500px 200px at 0% 0%,#1f7a5c 0%,transparent 70%),radial-gradient(400px 220px at 100% 120%,#8e1b23 0%,transparent 65%),linear-gradient(135deg,#0b3b33 0%,#0a2a24 60%,#3c0d12 100%)}
+.banner-nav .bn-luces{position:absolute;top:2px;left:0;right:0;display:flex;justify-content:space-around;padding:0 4%}
+.banner-nav .bn-arbol{font-size:2.4rem;line-height:1;filter:drop-shadow(0 6px 10px rgba(0,0,0,.35))}
+.banner-nav b{display:block;font-family:var(--f-display);font-size:1.3rem;font-weight:800}
+.banner-nav span{color:rgba(255,255,255,.85);font-size:.92rem}
+@media (prefers-reduced-motion:reduce){.nieve-fondo{display:none!important}}
 
 </style>
 </head>
@@ -395,11 +458,13 @@ body.en-login main{padding:0!important;max-width:none}
   <div class="wrap">
     <div class="top">
       <div class="brand">Kardex <span class="live" id="live"><i></i><span>conectando…</span></span></div>
-      <button class="btn primary sm" data-act="subir-boleta" id="btnVenderTop">📷 Subir boleta</button>
+      <button class="btn primary sm" data-act="subir-boleta" id="btnVenderTop">＋ Nuevo pedido</button>
     </div>
     <nav class="tabs" id="tabs"></nav>
   </div>
+  <div class="luces" id="luces" aria-hidden="true"></div>
 </header>
+<div class="nieve-fondo" id="nieveFondo" aria-hidden="true"></div>
 <main class="wrap" id="main"></main>
 <nav class="bottom" id="bottom"></nav>
 <div id="overlayRoot"></div>
@@ -623,11 +688,28 @@ async function instalarApp(){
 }
 if("serviceWorker" in navigator) addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
 
+// ----- Temporada navideña: de noviembre al 6 de enero la app se decora sola; después vuelve a la normalidad -----
+const esNavidad = (d = new Date()) => { const m = d.getMonth()+1; return m === 11 || m === 12 || (m === 1 && d.getDate() <= 6); };
+function decorarNavidad(){
+  if(!esNavidad()) return;
+  document.body.classList.add("navidad");
+  $("#luces").innerHTML = Array.from({length: 18}, (_, i) => `<span class="foco f${i % 4}"></span>`).join("");
+  $("#nieveFondo").innerHTML = Array.from({length: 16}, (_, i) => `<i style="left:${(i * 41 + 7) % 100}%;animation-delay:${(i % 8) * -2.1}s;animation-duration:${14 + (i % 5) * 3}s;font-size:${10 + (i % 4) * 4}px">❄</i>`).join("");
+}
+function bannerNavidad(){
+  if(!esNavidad()) return "";
+  const dias = Math.ceil((new Date(new Date().getFullYear(), 11, 25) - new Date(hoy()+"T00:00:00")) / 864e5);
+  return `<div class="banner-nav"><div class="bn-luces" aria-hidden="true">${Array.from({length: 10}, (_, i) => `<span class="foco f${i % 4}"></span>`).join("")}</div>
+    <span class="bn-arbol" aria-hidden="true">🎄</span>
+    <div><b>¡Hola, Gina!</b><span>${dias > 0 ? `Faltan ${dias} día${dias===1?"":"s"} para Navidad. ¡Que vengan buenas ventas! ✨` : dias === 0 ? "¡Feliz Navidad! 🎁" : "¡Feliz año nuevo! 🎉"}</span></div></div>`;
+}
+decorarNavidad();
+
 // ----- Inicio -----
 function vistaInicio(){
-  if(!S.productos.length) return `<div class="bienvenida"><h1>Resumen de inventario</h1><p class="sub">Tu inventario está vacío. Así se llena, en tres pasos:</p></div>
+  if(!S.productos.length) return `${bannerNavidad()}<div class="bienvenida"><h1>Resumen de inventario</h1><p class="sub">Tu inventario está vacío. Así se llena, en tres pasos:</p></div>
     <div class="pasos">
-      <div class="paso"><span class="n">1</span><span class="ico">${ICON.pedidos}</span><h3>Sube la boleta del pedido</h3><p>Toma foto a la boleta y se llena sola: productos, cantidades, precios, bonificaciones, marca y línea. También puedes escribirlo.</p><button class="btn primary" data-act="subir-boleta">📷 Subir boleta</button></div>      <div class="paso"><span class="n">2</span><span class="ico">${ICON.recibir}</span><h3>Recibe la mercadería</h3><p>Cuando llegue el reparto, elige la boleta: <b>llegó completo</b> o <b>incompleto</b>. Si faltó algo, el pago se recalcula solo.</p><button class="btn" data-go="recibir">Recibir mercadería</button></div>
+      <div class="paso"><span class="n">1</span><span class="ico">${ICON.pedidos}</span><h3>Sube la boleta del pedido</h3><p>Toma foto a la boleta y se llena sola: productos, cantidades, precios, bonificaciones, marca y línea. También puedes escribirlo.</p><button class="btn primary" data-act="subir-boleta">＋ Nuevo pedido</button></div>      <div class="paso"><span class="n">2</span><span class="ico">${ICON.recibir}</span><h3>Recibe la mercadería</h3><p>Cuando llegue el reparto, elige la boleta: <b>llegó completo</b> o <b>incompleto</b>. Si faltó algo, el pago se recalcula solo.</p><button class="btn" data-go="recibir">Recibir mercadería</button></div>
       <div class="paso"><span class="n">3</span><span class="ico">${ICON.inventario}</span><h3>Mira tu stock</h3><p>Aquí verás cuánto tienes de cada producto, cuánto vale y qué está por acabarse.</p></div>
     </div>`;
   const C = new Map(S.productos.map(p => [p.id, calc(p)]));
@@ -651,7 +733,7 @@ function vistaInicio(){
     ...riesgo.slice(0,6).map(p => { const c = C.get(p.id); return `<div class="alerta ${c.estado==="bajo"?"warn":"bad"}"><span class="dot"></span><span><b>${esc(p.nombre)}</b> · quedan ${num(c.stock,1)} ${esc(plural(uv(p),c.stock))}${c.cobertura!==null ? ` (${cobTxt(c)})` : ""}${c.sugerido ? ` · pedir ${c.sugerido.cant} ${esc(c.sugerido.unidad.toLowerCase())}` : ""}</span><button class="btn sm" data-act="abrir" data-id="${p.id}">Ver</button></div>`; })
   ];
 
-  return `
+  return `${bannerNavidad()}
   <div class="row between"><div><h1>Resumen de inventario</h1><p class="sub">${fechaLarga(hoy())} · el stock se actualiza solo con cada mercadería recibida.</p></div>
     <div class="row"><button class="btn" data-act="excel-stock">⬇ Descargar Excel</button><button class="btn wa" data-act="wa-resumen">${waIcon()} Enviar resumen${S.config?.whatsapp ? " a +"+esc(S.config.whatsapp.replace(/^51/,"51 ")) : " por WhatsApp"}</button></div></div>
   <div class="kpis">
@@ -671,12 +753,12 @@ function vistaInicio(){
     </div>
     <div class="tbl"><table class="lm lm-stock">
       <thead><tr><th>Producto</th><th>Presentación</th><th class="r">Stock</th><th class="r">Factor</th><th class="r">Unidades</th><th class="r">Valor</th><th>Estado</th></tr></thead>
-      <tbody>${ps.map(p => { const c = C.get(p.id); return `<tr class="click" data-act="abrir" data-id="${p.id}">
+      <tbody>${ps.map(p => { const c = C.get(p.id); return `<tr class="click" data-act="abrir" data-id="${p.id}" data-e="${c.estado}">
         <td><span class="cod">${esc(p.codigo || "")}</span><b>${esc(p.nombre)}</b><br><span class="small muted">${esc([p.marca,p.linea].filter(Boolean).join(" · "))}</span></td>
         <td data-l="Presentación"><span class="pill tag">${esc(presentacionTxt(p))}</span></td>
         <td class="r"><b>${esc(stockTxt(p, c.stock))}</b></td>
         <td class="r">${empaque(p) ? num(empaque(p).factor,0) : "—"}</td>
-        <td class="r">${num(c.stock,2)} <span class="small muted">${esc(abr(uv(p)))}</span></td>
+        <td class="r${empaque(p) ? "" : " solo-pc"}">${num(c.stock,2)} <span class="small muted">${esc(abr(uv(p)))}</span></td>
         <td class="r">${soles(c.valor)}</td><td>${pill(c.estado)}</td></tr>`; }).join("") || `<tr><td colspan="7" class="muted">Ningún producto coincide.</td></tr>`}</tbody>
     </table></div>
   </section>`;
@@ -811,21 +893,25 @@ function vistaPedidos(){
   const filtros = [["todos","Todos",hist.length],["completo","Recibido completo",cuenta("completo")],["incompleto","Llegó incompleto",cuenta("incompleto")],["cancelado","Cancelado",cuenta("cancelado")]];
   return `
   <div class="row between"><div><h1>Pedidos</h1><p class="sub">Sube la boleta del pedido. Cuando llegue, lo recibes en Recibir mercadería y queda en el historial.</p></div>
-    <div class="row"><button class="btn" data-act="excel-pedidos">⬇ Descargar Excel</button><button class="btn primary" data-act="subir-boleta">📷 Subir boleta</button></div></div>
+    <div class="row"><button class="btn" data-act="excel-pedidos">⬇ Descargar Excel</button><button class="btn primary" data-act="subir-boleta">＋ Nuevo pedido</button></div></div>
   <h2>Por llegar</h2>
   ${act.length ? act.map(tarjeta).join("") : `<div class="card empty"><p>No hay pedidos por llegar.</p></div>`}
   ${hist.length ? `<section class="card"><div><h2>Cumplimiento de proveedores</h2><p class="sub">Cuántos pedidos llegaron completos y qué parte de lo pedido llegó.</p></div>
-    <div class="tbl"><table><thead><tr><th>Proveedor</th><th class="r">Pedidos</th><th class="r">Completos</th><th class="r">Incompletos</th><th class="r">Cancelados</th><th class="r">Llegó de lo pedido</th></tr></thead><tbody>
-      ${Object.entries(porProv).sort((a,b) => b[1].total - a[1].total).map(([k,x]) => { const pct = x.pedidas ? Math.round(x.llegaron/x.pedidas*100) : 0;
-        return `<tr><td><b>${esc(k)}</b></td><td class="r">${x.total}</td><td class="r">${x.completo}</td><td class="r">${x.incompleto}</td><td class="r">${x.cancelado}</td><td class="r"><span class="pill ${pct >= 95 ? "ok" : pct >= 80 ? "warn" : "bad"}">${pct}%</span></td></tr>`; }).join("")}
-    </tbody></table></div></section>
-  <div class="row between"><h2>Historial de pedidos</h2>
+    <div class="cumpl">${Object.entries(porProv).sort((a,b) => b[1].total - a[1].total).map(([k,x]) => { const pct = x.pedidas ? Math.round(x.llegaron/x.pedidas*100) : 0, cls = pct >= 95 ? "ok" : pct >= 80 ? "warn" : "bad";
+        return `<div class="cumpl-f"><div style="min-width:0"><b>${esc(k)}</b><div class="small muted">${x.total} pedido${x.total===1?"":"s"} · <span style="color:var(--ok)">${x.completo} completo${x.completo===1?"":"s"}</span>${x.incompleto ? ` · <span style="color:var(--bad)">${x.incompleto} incompleto${x.incompleto===1?"":"s"}</span>` : ""}${x.cancelado ? ` · ${x.cancelado} cancelado${x.cancelado===1?"":"s"}` : ""}</div><div class="progress" style="margin-top:6px"><i style="width:${pct}%;background:var(--${cls})"></i></div></div><span class="pill ${cls}" title="Llegó de lo pedido">${pct}%</span></div>`; }).join("")}</div></section>
+  <div class="hist-cab"><h2>Historial de pedidos</h2>
     <span class="seg" role="group" aria-label="Filtrar">${filtros.map(([v,t,n]) => `<button data-act="filtro-hist" data-v="${v}" aria-pressed="${f===v}">${t} (${n})</button>`).join("")}</span></div>
   ${cer.length ? cer.map(tarjeta).join("") : `<div class="card empty"><p>No hay pedidos en este filtro.</p></div>`}` : ""}`;
 }
 function formPedido(){
   const d = S.pedido;
   const suma = d.lineas.reduce((a,l) => a + (l.bonif ? 0 : toNum(l.cantidad)*toNum(l.precio)), 0);
+  // Primero se elige cómo cargar el pedido; recién después se muestra el formulario
+  if(!d.modo) return `<div class="row between"><div><h1>Nuevo pedido</h1><p class="sub">¿Cómo quieres registrarlo?</p></div><button class="btn" data-act="cancelar-pedido-form">Cancelar</button></div>
+  <div class="elegir-modo">
+    <button data-act="modo-pedido" data-v="foto"><span class="em-ico">📷</span><b>Subir foto de la boleta</b><span>Tomas la foto o la eliges de tu galería y la app llena todo sola.</span><span class="em-ir">Elegir →</span></button>
+    <button data-act="modo-pedido" data-v="manual"><span class="em-ico">✍️</span><b>Escribir a mano</b><span>Digitas cada producto. Al escribir te sugiere los de tu inventario.</span><span class="em-ir">Elegir →</span></button>
+  </div>`;
   return `<div class="row between"><div><h1>Nuevo pedido</h1><p class="sub">Sube la foto de la boleta y se llena sola, o escribe los productos. Cuando llegue el reparto, lo recibes en Recibir mercadería.</p></div><button class="btn" data-act="cancelar-pedido-form">Cancelar</button></div>
   <div class="modo-pedido"><button data-act="modo-pedido" data-v="foto" aria-pressed="${d.modo !== "manual"}"><b>📷 Con foto de la boleta</b><span>La app la lee y llena todo</span></button><button data-act="modo-pedido" data-v="manual" aria-pressed="${d.modo === "manual"}"><b>✍️ Escribir a mano</b><span>Tú digitas cada producto</span></button></div>
   <div class="${d.modo === "manual" ? "" : "recibir-grid"}">
@@ -1554,7 +1640,7 @@ document.addEventListener("click", async e => {
     else if(a === "recibir-pedido"){ nuevaRecepcion(id); S.rec.modo = t.dataset.modo || "completo"; render(); if(S.rec.modo === "completo") abrirConfirmacion(); }
     // Recibir
     else if(a === "recibir-directo") nuevaRecepcion(null);
-    else if(a === "subir-boleta"){ if(!S.pedido) S.pedido = nuevoPedidoVacio(); ir("pedidos"); setTimeout(() => $("#foto-pedido")?.click(), 80); }
+    else if(a === "subir-boleta"){ if(!S.pedido) S.pedido = nuevoPedidoVacio(); ir("pedidos"); }
     else if(a === "leer-pedido") leerBoletaPedido();
     else if(a === "instalar") instalarApp();
     else if(a === "excel-venta" || a === "excel-ganancia"){ await descargarExcel(a === "excel-venta" ? "kardex-precios" : "kardex-ganancia", {"Precios y ganancia": filasVenta()}); toast("Excel descargado."); }
