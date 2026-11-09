@@ -4,6 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Kardex de la Tienda</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icono-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#12A37F">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Kardex">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
@@ -357,6 +364,30 @@ tr.click:hover td{background:#F7FAFF}
 .modo-pedido button[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-weak)}
 .modo-pedido button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .cod{display:inline-block;font-family:var(--f-mono);font-size:.72rem;font-weight:500;color:var(--accent);background:var(--accent-weak);border-radius:6px;padding:1px 6px;margin-right:6px;vertical-align:1px}
+/* ===== Ingreso navideño ===== */
+body.en-login header,body.en-login nav.bottom{display:none}
+body.en-login main{padding:0!important;max-width:none}
+.bienvenida-nav{position:relative;min-height:100vh;min-height:100dvh;display:grid;place-items:center;padding:24px max(16px,env(safe-area-inset-left,0px));overflow:hidden;
+  background:radial-gradient(1200px 600px at 50% -10%,#1f7a5c 0%,transparent 60%),radial-gradient(800px 500px at 100% 110%,#8e1b23 0%,transparent 55%),linear-gradient(160deg,#0b3b33 0%,#0a2a24 55%,#3c0d12 100%)}
+.nieve{position:absolute;inset:0;pointer-events:none}
+.nieve i{position:absolute;top:-12px;border-radius:50%;background:#fff;filter:blur(.4px);animation:caer linear infinite}
+@keyframes caer{0%{transform:translate3d(0,-10px,0)}50%{transform:translate3d(18px,50vh,0)}100%{transform:translate3d(-12px,105vh,0)}}
+.guirnalda{position:absolute;top:0;left:0;right:0;display:flex;justify-content:space-around;padding:0 4%;pointer-events:none}
+.guirnalda::before{content:"";position:absolute;left:0;right:0;top:10px;height:22px;border-bottom:2px solid rgba(255,255,255,.25);border-radius:0 0 50% 50%}
+.foco{width:12px;height:16px;border-radius:50% 50% 45% 45%;margin-top:22px;animation:brillo 2.4s ease-in-out infinite;box-shadow:0 0 14px currentColor}
+.foco.f0{background:#ff5a5f;color:#ff5a5f}.foco.f1{background:#ffd166;color:#ffd166;animation-delay:.6s}.foco.f2{background:#5ed3b0;color:#5ed3b0;animation-delay:1.2s}.foco.f3{background:#7fb7ff;color:#7fb7ff;animation-delay:1.8s}
+@keyframes brillo{0%,100%{opacity:1}50%{opacity:.35}}
+.tarjeta-nav{position:relative;z-index:1;width:min(420px,100%);background:rgba(255,255,255,.97);border-radius:26px;padding:30px 26px 24px;display:grid;gap:12px;text-align:center;box-shadow:0 30px 80px rgba(0,0,0,.4)}
+.tarjeta-nav .arbol{font-size:3.2rem;line-height:1;margin-top:-62px;filter:drop-shadow(0 8px 14px rgba(0,0,0,.3))}
+.tarjeta-nav .saludo-mini{margin:4px 0 0;font-size:.8rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#12A37F}
+.tarjeta-nav h1{font-size:2.1rem;color:#14231f;margin:0}
+.tarjeta-nav .saludo{margin:0 0 6px;color:#5b6b66}
+.tarjeta-nav form{display:grid;gap:6px;text-align:left}
+.tarjeta-nav input{background:#fff;color:#14231f;border-color:#dfe7e4}
+.tarjeta-nav .btn.primary{background:linear-gradient(135deg,#12A37F,#0e8a6b);border:0;color:#fff}
+.btn.instalar{background:#fff7e0;border-color:#ffd166;color:#7a5200}
+@media (prefers-reduced-motion:reduce){.nieve i,.foco{animation:none}.nieve{display:none}}
+
 </style>
 </head>
 <body>
@@ -547,6 +578,7 @@ function ir(v){ S.view = v; try{ history.replaceState(null, "", "#"+v); }catch{}
 function render(){
   const m = $("#main");
   $("#btnVenderTop").hidden = !S.clave;
+  document.body.classList.toggle("en-login", !S.clave);
   if(!S.clave){ $("#tabs").innerHTML = ""; $("#bottom").innerHTML = ""; m.innerHTML = vistaLogin(); return; }
   pintarNav();
   if(!S.conectado){ m.innerHTML = `<div class="card empty"><span class="spin"></span><p>Cargando tu tienda…</p></div>`; return; }
@@ -555,15 +587,41 @@ function render(){
 }
 
 function vistaLogin(){
-  return `<div class="login card">
-    <div><h1>Kardex de la Tienda</h1><p class="sub">Escribe la clave de la tienda. Solo se pide una vez en este equipo.</p></div>
-    <form id="formLogin" class="row" autocomplete="off">
-      <input id="clave" class="grow" placeholder="Clave de la tienda" aria-label="Clave de la tienda" autocapitalize="off">
-      <button class="btn primary">Entrar</button>
-    </form>
-    <p class="small muted" id="loginMsg" style="margin:0"></p>
+  const copos = Array.from({length: 36}, (_, i) => `<i style="left:${(i * 37) % 100}%;animation-delay:${(i % 9) * -1.3}s;animation-duration:${8 + (i % 5) * 2}s;width:${4 + (i % 4) * 2}px;height:${4 + (i % 4) * 2}px;opacity:${0.5 + (i % 5) / 10}"></i>`).join("");
+  return `<div class="bienvenida-nav">
+    <div class="nieve" aria-hidden="true">${copos}</div>
+    <div class="guirnalda" aria-hidden="true">${Array.from({length: 14}, (_, i) => `<span class="foco f${i % 4}"></span>`).join("")}</div>
+    <div class="tarjeta-nav">
+      <div class="arbol" aria-hidden="true">🎄</div>
+      <p class="saludo-mini">Kardex de la Tienda</p>
+      <h1>¡Bienvenida, Gina!</h1>
+      <p class="saludo">Tu inventario te espera. Que esta Navidad venga con buenas ventas ✨</p>
+      <form id="formLogin" autocomplete="off">
+        <label class="f" for="clave" style="color:#5b6b66">Clave de la tienda</label>
+        <div class="row" style="flex-wrap:nowrap">
+          <input id="clave" class="grow" placeholder="Escribe tu clave" aria-label="Clave de la tienda" autocapitalize="off">
+          <button class="btn primary">Entrar</button>
+        </div>
+      </form>
+      <p class="small" id="loginMsg" style="margin:0;color:#b4262c;min-height:1.2em"></p>
+      ${puedeInstalar() ? `<button class="btn instalar" data-act="instalar">📲 Instalar como app</button>` : ""}
+      <p class="small" style="margin:0;color:#7a8a85">Solo se pide una vez en este equipo.</p>
+    </div>
   </div>`;
 }
+// Instalar como app: Android/Chrome usan el aviso del navegador; en iPhone se explica cómo hacerlo
+let avisoInstalar = null;
+window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); avisoInstalar = e; render(); });
+window.addEventListener("appinstalled", () => { avisoInstalar = null; toast("¡Listo! El Kardex quedó instalado como app."); render(); });
+const esApp = () => matchMedia("(display-mode: standalone)").matches || navigator.standalone;
+const esIphone = () => /iphone|ipad|ipod/i.test(navigator.userAgent);
+const puedeInstalar = () => !esApp() && (avisoInstalar || esIphone());
+async function instalarApp(){
+  if(avisoInstalar){ avisoInstalar.prompt(); await avisoInstalar.userChoice.catch(() => null); avisoInstalar = null; render(); return; }
+  if(esIphone()) toast("En iPhone: toca Compartir (el cuadrito con flecha) y luego «Agregar a inicio».");
+  else toast("Abre el menú del navegador (⋮) y toca «Instalar app» o «Agregar a la pantalla de inicio».");
+}
+if("serviceWorker" in navigator) addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
 
 // ----- Inicio -----
 function vistaInicio(){
@@ -1455,6 +1513,7 @@ function vistaMas(){
     <div class="row"><input type="date" id="del-fecha" value="${hoy()}" style="width:auto"><button class="btn danger" data-act="borrar-fecha">Borrar lo de esa fecha</button></div>
     <div class="row" style="border-top:1px solid var(--line);padding-top:12px"><span class="small muted grow">Para empezar con la tienda limpia, sin nada:</span><button class="btn danger" data-act="borrar-todo">Borrar TODO</button></div>
   </section>
+  ${!esApp() ? `<section class="card"><div><h2>📲 Instalar como app</h2><p class="sub">Queda como ícono en tu celular y abre en pantalla completa, sin escribir el enlace.</p></div><div><button class="btn primary" data-act="instalar">Instalar Kardex</button></div></section>` : ""}
   <section class="card"><h2>Este equipo</h2><button class="btn danger" data-act="salir">Cerrar sesión en este equipo</button></section>`;
 }
 
@@ -1497,6 +1556,7 @@ document.addEventListener("click", async e => {
     else if(a === "recibir-directo") nuevaRecepcion(null);
     else if(a === "subir-boleta"){ if(!S.pedido) S.pedido = nuevoPedidoVacio(); ir("pedidos"); setTimeout(() => $("#foto-pedido")?.click(), 80); }
     else if(a === "leer-pedido") leerBoletaPedido();
+    else if(a === "instalar") instalarApp();
     else if(a === "excel-venta" || a === "excel-ganancia"){ await descargarExcel(a === "excel-venta" ? "kardex-precios" : "kardex-ganancia", {"Precios y ganancia": filasVenta()}); toast("Excel descargado."); }
     else if(a === "guardar-precios"){ const cam = Object.entries(S.pvCambios || {}); if(!cam.length){ toast("No hay cambios por guardar."); return; } t.disabled = true; for(const [pid, ch] of cam) await actualizar("productos", pid, ch); S.pvCambios = {}; await refrescar(true); toast(`Precios guardados: ${cam.length} producto${cam.length===1?"":"s"}.`); }
     else if(a === "sug"){ const l = S.pedido.lineas[+t.dataset.i], p = prod(id); if(l && p){ elegirProductoLinea(l, p); $("#sug")?.remove(); render(); } }
